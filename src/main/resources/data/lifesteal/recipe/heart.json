@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NTN",
+    "TBT",
+    "NTN"
+  ],
+  "key": {
+    "N": "minecraft:netherite_block",
+    "T": "minecraft:totem_of_undying",
+    "B": "minecraft:beacon"
+  },
+  "result": {
+    "count": 1,
+    "id": "minecraft:nether_star",
+    "components": {
+      "minecraft:custom_data": {
+        "lifesteal:heart": true
+      },
+      "minecraft:item_name": "{\"text\":\"Heart\",\"color\":\"red\",\"bold\":true}"
+    }
+  }
+}

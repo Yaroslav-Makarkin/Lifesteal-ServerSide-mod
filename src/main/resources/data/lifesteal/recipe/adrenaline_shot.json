@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " S ",
+    "SNS",
+    " R "
+  ],
+  "key": {
+    "S": "minecraft:sugar",
+    "N": "minecraft:nether_star",
+    "R": "minecraft:redstone_block"
+  },
+  "result": {
+    "id": "minecraft:potion",
+    "count": 1,
+    "components": {
+      "minecraft:custom_data": { "lifesteal:adrenaline": true },
+      "minecraft:item_name": "{\"text\":\"Adrenaline Shot\",\"color\":\"red\",\"bold\":true}"
+    }
+  }
+}

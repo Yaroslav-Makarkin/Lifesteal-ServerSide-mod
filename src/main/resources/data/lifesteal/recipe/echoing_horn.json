@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " E ",
+    "EGE",
+    " E "
+  ],
+  "key": {
+    "E": { "item": "minecraft:echo_shard" },
+    "G": { "item": "minecraft:goat_horn" }
+  },
+  "result": {
+    "id": "minecraft:goat_horn",
+    "count": 1,
+    "components": {
+      "minecraft:custom_data": { "lifesteal:echoing_horn": true },
+      "minecraft:item_name": "{\"text\":\"Echoing Horn\",\"color\":\"blue\",\"bold\":true}"
+    }
+  }
+}

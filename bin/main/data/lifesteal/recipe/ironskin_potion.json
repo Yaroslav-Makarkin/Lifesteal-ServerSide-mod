@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "III",
+    "INI",
+    "SSS"
+  ],
+  "key": {
+    "I": "minecraft:iron_block",
+    "N": "minecraft:nether_star",
+    "S": "minecraft:turtle_scute"
+  },
+  "result": {
+    "id": "minecraft:potion",
+    "count": 1,
+    "components": {
+      "minecraft:custom_data": { "lifesteal:ironskin": true },
+      "minecraft:item_name": "{\"text\":\"Iron Skin Potion\",\"color\":\"gray\",\"bold\":true}"
+    }
+  }
+}
