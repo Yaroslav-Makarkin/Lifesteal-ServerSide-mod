@@ -791,6 +791,15 @@ public class LifeSteal implements ModInitializer {
                             ctx.getSource().sendError(Text.literal("§cHlasování momentálně neprobíhá!"));
                             return 0;
                         }
+                        LocalDateTime now = LocalDateTime.now();
+                        LocalTime time = now.toLocalTime();
+                        boolean inVotingWindow = now.getDayOfWeek() == DayOfWeek.SATURDAY
+                            && !time.isBefore(LocalTime.of(15, 0))
+                            && time.isBefore(LocalTime.of(15, 30));
+                        if (!inVotingWindow) {
+                            ctx.getSource().sendError(Text.literal("§cHlasovat lze pouze v sobotu mezi 15:00 a 15:30."));
+                            return 0;
+                        }
                         int id = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "id");
                         if (id < 1 || id > oracleState.currentOptions.size()) return 0;
                         
@@ -1442,75 +1451,6 @@ public class LifeSteal implements ModInitializer {
                 )
             );
 
-            dispatcher.register(CommandManager.literal("skin")
-                .then(CommandManager.argument("name", StringArgumentType.string())
-                    .executes(ctx -> {
-                        ServerPlayerEntity player = ctx.getSource().getPlayer();
-                        if (player == null) return 0;
-                        String skinName = StringArgumentType.getString(ctx, "name");
-                        ctx.getSource().sendFeedback(() -> Text.literal("§eStahuji skin pro: " + skinName), false);
-                        
-                                CompletableFuture.runAsync(() -> {
-                            try {
-                                // 1. Get UUID from Name
-                                HttpRequest nameReq = HttpRequest.newBuilder()
-                                    .uri(URI.create("https://api.mojang.com/users/profiles/minecraft/" + skinName))
-                                    .build();
-                                HttpResponse<String> nameResp = HTTP_CLIENT.send(nameReq, HttpResponse.BodyHandlers.ofString());
-                                if (nameResp.statusCode() != 200) {
-                                    player.sendMessage(Text.literal("§cHráč nebyl nalezen."));
-                                    return;
-                                }
-                                JsonObject nameJson = JsonParser.parseString(nameResp.body()).getAsJsonObject();
-                                String uuid = nameJson.get("id").getAsString();
-
-                                // 2. Get Profile with textures
-                                HttpRequest profileReq = HttpRequest.newBuilder()
-                                    .uri(URI.create("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid + "?unsigned=false"))
-                                    .build();
-                                HttpResponse<String> profileResp = HTTP_CLIENT.send(profileReq, HttpResponse.BodyHandlers.ofString());
-                                if (profileResp.statusCode() != 200) {
-                                    player.sendMessage(Text.literal("§cChyba při stahování profilu."));
-                                    return;
-                                }
-                                JsonObject profileJson = JsonParser.parseString(profileResp.body()).getAsJsonObject();
-                                JsonObject properties = profileJson.getAsJsonArray("properties").get(0).getAsJsonObject();
-                                String value = properties.get("value").getAsString();
-                                String signature = properties.get("signature").getAsString();
-
-                                // 3. Apply to player (on server thread)
-                                player.getCommandSource().getServer().execute(() -> {
-                                    // Use reflection to bypass version-specific signature issues in GameProfile/PlayerListS2CPacket
-                                    try {
-                                        GameProfile profile = player.getGameProfile();
-                                        java.lang.reflect.Method getProps = profile.getClass().getMethod("getProperties");
-                                        PropertyMap props = (PropertyMap) getProps.invoke(profile);
-                                        props.removeAll("textures");
-                                        props.put("textures", new Property("textures", value, signature));
-                                        
-                                        synchronized (oracleState) {
-                                            SkinData skinData = new SkinData();
-                                            skinData.value = value;
-                                            skinData.signature = signature;
-                                            oracleState.savedSkins.put(player.getUuid().toString(), skinData);
-                                        }
-                                        saveData();
-                                        
-                                        refreshSkin(player);
-                                        player.sendMessage(Text.literal("§aSkin pro jméno " + skinName + " byl stažen a aplikován!"));
-                                    } catch (Exception e) {
-                                        LOGGER.error("Failed to update skin: ", e);
-                                        player.sendMessage(Text.literal("§cChyba při aplikaci skinu: " + e.getMessage()));
-                                    }
-                                });
-                            } catch (Exception e) {
-                                player.sendMessage(Text.literal("§cChyba: " + e.getMessage()));
-                            }
-                        });
-                        return 1;
-                    })
-                )
-            );
         });
 
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
@@ -1585,14 +1525,6 @@ public class LifeSteal implements ModInitializer {
                         updateMaxHealth(p, (double) oracleState.pendingHealthChanges.remove(id.toString()));
                         saveData();
                     }
-                });
-            }
-
-            // Apply saved skin (delayed)
-            if (oracleState.savedSkins.containsKey(id.toString())) {
-                server.execute(() -> {
-                    ServerPlayerEntity p = server.getPlayerManager().getPlayer(id);
-                    if (p != null) refreshSkin(p);
                 });
             }
 
@@ -4165,7 +4097,8 @@ public class LifeSteal implements ModInitializer {
             }
             return sb.toString();
         } catch (Exception e) {
-            return password; // fallback (nebezpečné, ale lepší než pád)
+            LOGGER.error("Password hashing failed.", e);
+            return "";
         }
     }
 }

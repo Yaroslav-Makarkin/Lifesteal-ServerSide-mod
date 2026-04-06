@@ -8,11 +8,8 @@
   "contact": {},
   "license": "All-Rights-Reserved",
   "icon": "assets/lifesteal/icon.png",
-  "environment": "*",
+  "environment": "server",
   "entrypoints": {
-    "client": [
-      "com.jarda.lifesteal.client.LifeStealClient"
-    ],
     "fabric-datagen": [
       "com.jarda.lifesteal.client.LifeStealDataGenerator"
     ],
