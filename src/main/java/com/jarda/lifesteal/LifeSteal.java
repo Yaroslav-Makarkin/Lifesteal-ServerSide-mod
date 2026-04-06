@@ -2020,7 +2020,7 @@ public class LifeSteal implements ModInitializer {
                         }
 
                         // Fly Check (každý tick, ale logika počítá tick po ticku)
-                        if (dy >= -0.08 && !p.isOnGround() && sw.isAir(p.getBlockPos().down()) && !p.isSwimming() && !p.hasStatusEffect(StatusEffects.SLOW_FALLING) && !p.hasStatusEffect(StatusEffects.LEVITATION)) {
+                        if (dy >= -0.08 && !p.isOnGround() && sw.isAir(p.getBlockPos().down()) && (!p.isSwimming() || CRAWLING_PLAYERS.contains(p.getUuid())) && !p.hasStatusEffect(StatusEffects.SLOW_FALLING) && !p.hasStatusEffect(StatusEffects.LEVITATION)) {
                             int ticks = IN_AIR_TICKS.getOrDefault(p.getUuid(), 0) + 1;
                             IN_AIR_TICKS.put(p.getUuid(), ticks);
                             if (ticks > 120) { // 6 sekund ve vzduchu
@@ -2935,28 +2935,17 @@ public class LifeSteal implements ModInitializer {
         MinecraftServer server = player.getCommandSource().getServer();
         if (server == null) return;
 
-        // Try SkinRestorer API via reflection
-        try {
-            Class<?> srApiClass = Class.forName("net.skinrestorer.api.SkinRestorerAPI");
-            java.lang.reflect.Method getApi = srApiClass.getMethod("getApi");
-            Object srApi = getApi.invoke(null);
-            java.lang.reflect.Method setSkin = srApi.getClass().getMethod("setSkin", String.class, String.class);
-            setSkin.invoke(srApi, player.getName().getString(), player.getName().getString());
-            java.lang.reflect.Method applySkin = srApi.getClass().getMethod("applySkin", Object.class);
-            applySkin.invoke(srApi, player);
-        } catch (Exception ignored) {
-            // Apply saved texture data if present
-            if (oracleState.savedSkins.containsKey(player.getUuid().toString())) {
-                SkinData data = oracleState.savedSkins.get(player.getUuid().toString());
-                GameProfile profile = player.getGameProfile();
-                try {
-                    java.lang.reflect.Method getProps = profile.getClass().getMethod("getProperties");
-                    PropertyMap props = (PropertyMap) getProps.invoke(profile);
-                    props.removeAll("textures");
-                    props.put("textures", new Property("textures", data.value, data.signature));
-                } catch (Exception e) {
-                    LOGGER.error("Failed to apply saved skin properties: ", e);
-                }
+        // Apply saved texture data if present.
+        if (oracleState.savedSkins.containsKey(player.getUuid().toString())) {
+            SkinData data = oracleState.savedSkins.get(player.getUuid().toString());
+            GameProfile profile = player.getGameProfile();
+            try {
+                java.lang.reflect.Method getProps = profile.getClass().getMethod("getProperties");
+                PropertyMap props = (PropertyMap) getProps.invoke(profile);
+                props.removeAll("textures");
+                props.put("textures", new Property("textures", data.value, data.signature));
+            } catch (Exception e) {
+                LOGGER.error("Failed to apply saved skin properties: ", e);
             }
         }
         
