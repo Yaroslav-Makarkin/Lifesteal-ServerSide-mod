@@ -154,6 +154,14 @@ public class LifeSteal implements ModInitializer {
     private static final ThreadLocal<Boolean> IS_DAMAGING_SHARED = ThreadLocal.withInitial(() -> false);
 
     private static final Map<Integer, String> EVENT_NAMES = new HashMap<>();
+    private static final Set<Integer> IMPLEMENTED_EVENTS = Set.of(
+        1, 2, 3, 4, 5, 6, 7, 8, 9,
+        11, 13, 14, 15, 16, 17, 19, 20,
+        25, 26, 28, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 47, 48,
+        53, 55, 56, 58, 59,
+        67, 68, 69, 70, 71, 72, 73, 75, 76, 77, 78, 80, 81
+    );
     static {
         // Category: World and Atmosphere
         EVENT_NAMES.put(1, "Low Gravity");
@@ -588,6 +596,10 @@ public class LifeSteal implements ModInitializer {
                             p.removeStatusEffect(StatusEffects.SLOWNESS);
                             p.removeStatusEffect(StatusEffects.DARKNESS);
                             p.removeStatusEffect(StatusEffects.BLINDNESS);
+                            if (oracleState.spawnSet) {
+                                teleportToConfiguredSpawn(p);
+                                updateLoginFreezeAnchorToCurrentPosition(p);
+                            }
                             ctx.getSource().sendFeedback(() -> Text.literal("§aPřihlášení úspěšné!"), false);
                             ctx.getSource().sendFeedback(() -> Text.literal("§eTip: Pro návrat na původní místo zmáčkni tlačítko na spawnu."), false);
                             return 1;
@@ -783,42 +795,8 @@ public class LifeSteal implements ModInitializer {
                     .executes(ctx -> {
                         ServerPlayerEntity p = ctx.getSource().getPlayer();
                         if (p == null) return 0;
-                        if (!LOGGED_IN.contains(p.getUuid())) {
-                            ctx.getSource().sendError(Text.literal("§cMusíš se nejprve přihlásit: /login <heslo>"));
-                            return 0;
-                        }
-                        if (!oracleState.votingActive) {
-                            ctx.getSource().sendError(Text.literal("§cHlasování momentálně neprobíhá!"));
-                            return 0;
-                        }
-                        LocalDateTime now = LocalDateTime.now();
-                        LocalTime time = now.toLocalTime();
-                        boolean inVotingWindow = now.getDayOfWeek() == DayOfWeek.SATURDAY
-                            && !time.isBefore(LocalTime.of(15, 0))
-                            && time.isBefore(LocalTime.of(15, 30));
-                        if (!inVotingWindow) {
-                            ctx.getSource().sendError(Text.literal("§cHlasovat lze pouze v sobotu mezi 15:00 a 15:30."));
-                            return 0;
-                        }
                         int id = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "id");
-                        if (id < 1 || id > oracleState.currentOptions.size()) return 0;
-                        
-                        int eventId = oracleState.currentOptions.get(id - 1);
-                        String eventName = EVENT_NAMES.getOrDefault(eventId, "Neznámý");
-                        
-                        UUID uuid = p.getUuid();
-                        if (PLAYER_VOTES.containsKey(uuid)) {
-                            int oldId = PLAYER_VOTES.get(uuid);
-                            VOTE_COUNTS.put(oldId, Math.max(0, VOTE_COUNTS.getOrDefault(oldId, 0) - 1));
-                        }
-                        
-                        PLAYER_VOTES.put(uuid, id);
-                        VOTE_COUNTS.put(id, VOTE_COUNTS.getOrDefault(id, 0) + 1);
-                        syncVoteStateFromRuntime();
-                        saveData();
-                        
-                        ctx.getSource().sendFeedback(() -> Text.literal("§aHlasoval jsi pro: §f" + eventName), false);
-                        return 1;
+                        return submitVote(p, id);
                     })
                 )
             );
@@ -945,6 +923,10 @@ public class LifeSteal implements ModInitializer {
                         .then(CommandManager.argument("id", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 81))
                             .executes(context -> {
                                 int id = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "id");
+                                if (!IMPLEMENTED_EVENTS.contains(id)) {
+                                    context.getSource().sendError(Text.literal("§cTento event ještě není plně implementovaný a nelze ho spustit."));
+                                    return 0;
+                                }
                                 oracleState.currentActiveEffect = id;
                                 oracleState.isEventActive = true;
                                 LocalDateTime startNow = LocalDateTime.now();
@@ -1458,6 +1440,12 @@ public class LifeSteal implements ModInitializer {
                 return ActionResult.FAIL;
             }
             if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+                if (entity instanceof ItemFrameEntity frame && frame.getHeldItemStack().isOf(Items.ELYTRA)
+                        && world.getRegistryKey().equals(World.END)
+                        && isInsideEndShip(world, frame.getBlockPos())) {
+                    sp.sendMessage(Text.literal("§cTato Elytra je střežena! Musíš nejprve porazit jejího strážce."), true);
+                    return ActionResult.FAIL;
+                }
                 if (sp.isCreative() || sp.isSpectator()) return ActionResult.PASS;
                 double dx = sp.getX() - entity.getX();
                 double dy = sp.getY() - entity.getY();
@@ -2096,6 +2084,14 @@ public class LifeSteal implements ModInitializer {
         achItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(achLore));
         inv.setStack(15, achItem);
 
+        // Slot 17 - Voting
+        ItemStack voteItem = new ItemStack(Items.WRITABLE_BOOK);
+        voteItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§d§lHlasování Oracle"));
+        List<Text> voteLore = new ArrayList<>();
+        voteLore.add(Text.literal("§7Klikni pro zobrazení hlasování."));
+        voteItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(voteLore));
+        inv.setStack(17, voteItem);
+
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) ->
             net.minecraft.screen.GenericContainerScreenHandler.createGeneric9x3(syncId, playerInventory, inv),
             Text.literal("§8Menu")));
@@ -2352,6 +2348,8 @@ public class LifeSteal implements ModInitializer {
                     server.execute(() -> openCraftsMenu(player));
                 } else if (slotIndex == 15) {
                     server.execute(() -> openAchievementsMenu(player));
+                } else if (slotIndex == 17) {
+                    server.execute(() -> openVotingMenu(player));
                 }
             }
             case "stats" -> {
@@ -2364,7 +2362,52 @@ public class LifeSteal implements ModInitializer {
                     server.execute(() -> openMainMenu(player));
                 }
             }
+            case "voting" -> {
+                if (slotIndex == 22) {
+                    server.execute(() -> openMainMenu(player));
+                } else if (oracleState.votingActive && slotIndex >= 10 && slotIndex <= 12) {
+                    int voteId = (slotIndex - 10) + 1;
+                    submitVote(player, voteId);
+                    server.execute(() -> openVotingMenu(player));
+                }
+            }
         }
+    }
+
+    public static void openVotingMenu(ServerPlayerEntity player) {
+        SimpleInventory inv = new SimpleInventory(27);
+
+        if (oracleState.votingActive && !oracleState.currentOptions.isEmpty()) {
+            for (int i = 0; i < Math.min(3, oracleState.currentOptions.size()); i++) {
+                int eventId = oracleState.currentOptions.get(i);
+                String eventName = EVENT_NAMES.getOrDefault(eventId, "Neznámý");
+                int votes = VOTE_COUNTS.getOrDefault(i + 1, 0);
+
+                ItemStack option = new ItemStack(Items.PAPER);
+                option.set(DataComponentTypes.ITEM_NAME, Text.literal("§a" + (i + 1) + ". §f" + eventName));
+                List<Text> lore = new ArrayList<>();
+                lore.add(Text.literal("§7Hlasů: §f" + votes));
+                lore.add(Text.literal("§7Klikni pro hlasování."));
+                option.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
+                inv.setStack(10 + i, option);
+            }
+        } else {
+            ItemStack info = new ItemStack(Items.BARRIER);
+            info.set(DataComponentTypes.ITEM_NAME, Text.literal("§cHlasování není aktivní"));
+            List<Text> lore = new ArrayList<>();
+            lore.add(Text.literal("§7Hlasování běží v sobotu 15:00–15:30."));
+            info.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
+            inv.setStack(11, info);
+        }
+
+        ItemStack backItem = new ItemStack(Items.ARROW);
+        backItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§7← Zpět do Menu"));
+        inv.setStack(22, backItem);
+
+        player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) ->
+            net.minecraft.screen.GenericContainerScreenHandler.createGeneric9x3(syncId, playerInventory, inv),
+            Text.literal("§8Oracle Hlasování")));
+        OPEN_MENUS.put(player.getUuid(), "voting");
     }
 
     private static final Map<UUID, Long> SHOP_COOLDOWNS = new HashMap<>();
@@ -3338,6 +3381,50 @@ public class LifeSteal implements ModInitializer {
             .append(Text.literal("\n\n"));
     }
 
+    private static boolean isVotingWindowNow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalTime time = now.toLocalTime();
+        return now.getDayOfWeek() == DayOfWeek.SATURDAY
+            && !time.isBefore(LocalTime.of(15, 0))
+            && time.isBefore(LocalTime.of(15, 30));
+    }
+
+    private static int submitVote(ServerPlayerEntity player, int id) {
+        if (!LOGGED_IN.contains(player.getUuid())) {
+            player.sendMessage(Text.literal("§cMusíš se nejprve přihlásit: /login <heslo>"), false);
+            return 0;
+        }
+        if (!oracleState.votingActive) {
+            player.sendMessage(Text.literal("§cHlasování momentálně neprobíhá!"), false);
+            return 0;
+        }
+        if (!isVotingWindowNow()) {
+            player.sendMessage(Text.literal("§cHlasovat lze pouze v sobotu mezi 15:00 a 15:30."), false);
+            return 0;
+        }
+        if (id < 1 || id > oracleState.currentOptions.size()) {
+            player.sendMessage(Text.literal("§cNeplatná volba."), false);
+            return 0;
+        }
+
+        int eventId = oracleState.currentOptions.get(id - 1);
+        String eventName = EVENT_NAMES.getOrDefault(eventId, "Neznámý");
+
+        UUID uuid = player.getUuid();
+        Integer oldId = PLAYER_VOTES.get(uuid);
+        if (oldId != null) {
+            VOTE_COUNTS.put(oldId, Math.max(0, VOTE_COUNTS.getOrDefault(oldId, 0) - 1));
+        }
+
+        PLAYER_VOTES.put(uuid, id);
+        VOTE_COUNTS.put(id, VOTE_COUNTS.getOrDefault(id, 0) + 1);
+        syncVoteStateFromRuntime();
+        saveData();
+
+        player.sendMessage(Text.literal("§aHlasoval jsi pro: §f" + eventName), false);
+        return 1;
+    }
+
     private static void handleOracleScheduling(MinecraftServer server) {
         LocalDateTime now = LocalDateTime.now();
         int currentWeek = now.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR);
@@ -3457,7 +3544,7 @@ public class LifeSteal implements ModInitializer {
         oracleState.receivedVoteTicketUuids.clear();
         
         // Pick 3 random options
-        List<Integer> allIds = new ArrayList<>(EVENT_NAMES.keySet());
+        List<Integer> allIds = new ArrayList<>(IMPLEMENTED_EVENTS);
         allIds.removeAll(oracleState.recentEvents);
         if (allIds.size() < 3) oracleState.recentEvents.clear(); // Reset if pool too small
         
