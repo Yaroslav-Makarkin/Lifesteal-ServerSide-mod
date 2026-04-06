@@ -724,6 +724,10 @@ public class LifeSteal implements ModInitializer {
                         context.getSource().sendError(Text.literal("§cMusíš se nejprve přihlásit: /login <heslo>"));
                         return 0;
                     }
+                    if (player.isGliding()) {
+                        context.getSource().sendError(Text.literal("§cBěhem letu na elytře nelze použít /lay."));
+                        return 0;
+                    }
                     if (player.hasVehicle()) {
                         player.stopRiding();
                     }
@@ -750,10 +754,16 @@ public class LifeSteal implements ModInitializer {
                         context.getSource().sendError(Text.literal("§cMusíš se nejprve přihlásit: /login <heslo>"));
                         return 0;
                     }
+                    if (player.isGliding()) {
+                        context.getSource().sendError(Text.literal("§cBěhem letu na elytře nelze použít /crawl."));
+                        return 0;
+                    }
                     if (player.hasVehicle()) {
                         player.stopRiding();
                     }
-                    LAYING_PLAYERS.remove(player.getUuid());
+                    if (LAYING_PLAYERS.remove(player.getUuid())) {
+                        player.clearSleepingPosition();
+                    }
                     if (CRAWLING_PLAYERS.contains(player.getUuid())) {
                         CRAWLING_PLAYERS.remove(player.getUuid());
                         player.setPose(EntityPose.STANDING);
@@ -1990,6 +2000,12 @@ public class LifeSteal implements ModInitializer {
                 }
 
                 // Pose enforcement (každý tick)
+                if (p.isGliding()) {
+                    if (LAYING_PLAYERS.remove(p.getUuid())) {
+                        p.clearSleepingPosition();
+                    }
+                    CRAWLING_PLAYERS.remove(p.getUuid());
+                }
                 if (LAYING_PLAYERS.contains(p.getUuid())) {
                     p.setPose(EntityPose.SLEEPING);
                     p.setSleepingPosition(p.getBlockPos());
