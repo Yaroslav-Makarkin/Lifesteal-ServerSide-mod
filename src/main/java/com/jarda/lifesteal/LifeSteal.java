@@ -4294,6 +4294,8 @@ public class LifeSteal implements ModInitializer {
                 p.fallDistance = 0;
             } else if (effect == 79) { // Mob Disguise
                 addEffect(p, new StatusEffectInstance(StatusEffects.INVISIBILITY, 40, 0, false, false));
+                addEffect(p, new StatusEffectInstance(StatusEffects.GLOWING, 40, 0, false, false));
+                addEffect(p, new StatusEffectInstance(StatusEffects.SPEED, 40, 1, false, false));
             } else if (effect == 80) { // The Floor is Lava
                 if (isSecond && p.isOnGround() && !p.isSneaking()) {
                     p.setOnFireFor(3);
