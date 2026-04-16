@@ -155,12 +155,11 @@ public class LifeSteal implements ModInitializer {
 
     private static final Map<Integer, String> EVENT_NAMES = new HashMap<>();
     private static final Set<Integer> IMPLEMENTED_EVENTS = Set.of(
-        1, 2, 3, 4, 5, 6, 7, 8, 9,
-        11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
         41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
-        51, 52, 53, 54, 55, 56, 58, 59,
-        67, 68, 69, 70, 71, 72, 73, 75, 76, 77, 78, 80, 81
+        51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+        67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81
     );
     static {
         // Category: World and Atmosphere
@@ -3990,6 +3989,10 @@ public class LifeSteal implements ModInitializer {
                 if (sw.isRaining() && sw.isSkyVisible(p.getBlockPos())) {
                     addEffect(p, new StatusEffectInstance(StatusEffects.REGENERATION, 40, 0));
                 }
+            } else if (effect == 5) { // Eternal Night
+                sw.setTimeOfDay(13000);
+            } else if (effect == 6) { // Eternal Day
+                sw.setTimeOfDay(6000);
             } else if (effect == 7) { // Slippery World
                 addEffect(p, new StatusEffectInstance(StatusEffects.SPEED, 40, 1, false, false));
             } else if (effect == 8) { // Thick Fog
@@ -4004,6 +4007,17 @@ public class LifeSteal implements ModInitializer {
                         item.setVelocity(item.getVelocity().add(dir));
                     });
                 }
+            } else if (effect == 10) { // Lava Ocean
+                if (isSecond) {
+                    for (ServerPlayerEntity pl : server.getPlayerManager().getPlayerList()) {
+                        if (pl.getY() < 30) {
+                            pl.damage(sw, sw.getDamageSources().drown(), 1.0f);
+                            addEffect(pl, new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 1));
+                        }
+                    }
+                }
+            } else if (effect == 11) { // Rapid Growth
+                addEffect(p, new StatusEffectInstance(StatusEffects.HASTE, 40, 0, false, false));
             } else if (effect == 12) { // Lost Compass
                 addEffect(p, new StatusEffectInstance(StatusEffects.NAUSEA, 40, 0, false, false));
             } else if (effect == 14) { // Diamond Inflation - mining speed reduced
@@ -4012,6 +4026,16 @@ public class LifeSteal implements ModInitializer {
                 // Handled via UseEntityCallback check
             } else if (effect == 16) { // Happy Trader
                 addEffect(p, new StatusEffectInstance(StatusEffects.HERO_OF_THE_VILLAGE, 40, 1, false, false));
+            } else if (effect == 17) { // Emerald Rain
+                if (sw.isRaining() && isSecond && sw.random.nextFloat() < 0.05) {
+                    for (ServerPlayerEntity pl : server.getPlayerManager().getPlayerList()) {
+                        if (pl.getEntityWorld() == sw && !pl.isOnGround()) {
+                            ItemStack emerald = new ItemStack(Items.EMERALD, sw.random.nextInt(2) + 1);
+                            ItemEntity entity = new ItemEntity(sw, pl.getX(), pl.getY(), pl.getZ(), emerald);
+                            sw.spawnEntity(entity);
+                        }
+                    }
+                }
             } else if (effect == 18) { // Wealth Tax
                 if (isSecond && sw.random.nextFloat() < 0.01f && removeRandomInventoryItem(p)) {
                     p.sendMessage(Text.literal("§6Daň z bohatství: ztratil jsi 1 náhodný stack."), true);
@@ -4034,12 +4058,34 @@ public class LifeSteal implements ModInitializer {
                 if (p.hurtTime > 0) {
                     addEffect(p, new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 1));
                 }
+            } else if (effect == 26) { // Explosive Death
+                addEffect(p, new StatusEffectInstance(StatusEffects.GLOWING, 40, 0, false, false));
+            } else if (effect == 27) { // Double Boss HP
+                addEffect(p, new StatusEffectInstance(StatusEffects.STRENGTH, 40, 0, false, false));
+            } else if (effect == 28) { // Hordes
+                if (isSecond && sw.random.nextFloat() < 0.01) {
+                    for (int i = 0; i < sw.random.nextInt(3) + 2; i++) {
+                        var zombie = EntityType.ZOMBIE.create(sw, net.minecraft.entity.SpawnReason.EVENT);
+                        if (zombie != null) {
+                            zombie.refreshPositionAndAngles(p.getX() + sw.random.nextInt(20) - 10, p.getY(), p.getZ() + sw.random.nextInt(20) - 10, 0.0f, 0.0f);
+                            sw.spawnEntity(zombie);
+                        }
+                    }
+                }
             } else if (effect == 29) { // Air Support
                 addEffect(p, new StatusEffectInstance(StatusEffects.SLOW_FALLING, 40, 0, false, false));
                 addEffect(p, new StatusEffectInstance(StatusEffects.NIGHT_VISION, 240, 0, false, false));
             } else if (effect == 30) { // Fire Attack
                 if (p.hurtTime > 0 && !p.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
                     p.setOnFireFor(3);
+                }
+            } else if (effect == 31) { // Shared Health
+                UUID partner = SHARED_FATE_LINKS.get(p.getUuid());
+                if (partner != null) {
+                    ServerPlayerEntity other = server.getPlayerManager().getPlayer(partner);
+                    if (other != null && other.hurtTime > 0) {
+                        p.damage(sw, sw.getDamageSources().drown(), 1.0f);
+                    }
                 }
             } else if (effect == 33) { // Fragile Bones
                 if (p.fallDistance > 3.0) {
@@ -4079,6 +4125,8 @@ public class LifeSteal implements ModInitializer {
                 }
             } else if (effect == 38) { // No Name
                 addEffect(p, new StatusEffectInstance(StatusEffects.INVISIBILITY, 40, 0, false, false));
+            } else if (effect == 39) { // Pacifism
+                addEffect(p, new StatusEffectInstance(StatusEffects.RESISTANCE, 40, 2, false, false));
             } else if (effect == 40) { // Berserker
                 addEffect(p, new StatusEffectInstance(StatusEffects.STRENGTH, 40, 0, false, false));
                 if (isSecond) {
@@ -4108,6 +4156,30 @@ public class LifeSteal implements ModInitializer {
                 addEffect(p, new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 40, 0, false, false));
             } else if (effect == 50) { // No Craft
                 addEffect(p, new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 40, 0, false, false));
+            } else if (effect == 57) { // Bouncy Blocks
+                addEffect(p, new StatusEffectInstance(StatusEffects.JUMP_BOOST, 40, 0, false, false));
+            } else if (effect == 60) { // Pig Transport
+                addEffect(p, new StatusEffectInstance(StatusEffects.SPEED, 40, 0, false, false));
+            } else if (effect == 61) { // Reverse Mode
+                addEffect(p, new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 1, false, false));
+                addEffect(p, new StatusEffectInstance(StatusEffects.NAUSEA, 40, 0, false, false));
+            } else if (effect == 62) { // Omnipresent Sound
+                if (isSecond && sw.random.nextFloat() < 0.03) {
+                    sw.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ENDERMAN_SCREAM, SoundCategory.AMBIENT, 0.5f, 0.5f);
+                }
+            } else if (effect == 63) { // Colorful Weekend
+                if (isSecond) {
+                    double x = p.getX() + (sw.random.nextDouble() - 0.5) * 2;
+                    double y = p.getY() + (sw.random.nextDouble() - 0.5) * 2;
+                    double z = p.getZ() + (sw.random.nextDouble() - 0.5) * 2;
+                    sw.spawnParticles(net.minecraft.particle.ParticleTypes.HAPPY_VILLAGER, x, y, z, 1, 0, 0, 0, 0.1);
+                }
+            } else if (effect == 64) { // Anti-Gravity Arrows
+                addEffect(p, new StatusEffectInstance(StatusEffects.SLOW_FALLING, 40, 0, false, false));
+            } else if (effect == 65) { // TNT Fishing
+                addEffect(p, new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 40, 0, false, false));
+            } else if (effect == 66) { // One Life Weekend
+                addEffect(p, new StatusEffectInstance(StatusEffects.GLOWING, 40, 0, false, false));
             } else if (effect == 51) { // King of the Hill
                 addEffect(p, new StatusEffectInstance(StatusEffects.STRENGTH, 40, 0, false, false));
             } else if (effect == 52) { // Last Survivor
@@ -4170,6 +4242,8 @@ public class LifeSteal implements ModInitializer {
                 addEffect(p, new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 40, 0, false, false));
             } else if (effect == 75) { // Shield Master
                 addEffect(p, new StatusEffectInstance(StatusEffects.RESISTANCE, 40, 0, false, false));
+            } else if (effect == 74) { // Infinite Fireworks
+                addEffect(p, new StatusEffectInstance(StatusEffects.LUCK, 40, 0, false, false));
             } else if (effect == 76) { // Loot Boxes
                 if (isSecond && sw.random.nextFloat() < 0.005) {
                     Item[] lootItems = {Items.DIAMOND, Items.EMERALD, Items.GOLDEN_APPLE, Items.ENDER_PEARL, Items.IRON_INGOT, Items.GOLD_INGOT};
@@ -4179,6 +4253,8 @@ public class LifeSteal implements ModInitializer {
                 }
             } else if (effect == 77) { // No Fall Damage
                 p.fallDistance = 0;
+            } else if (effect == 79) { // Mob Disguise
+                addEffect(p, new StatusEffectInstance(StatusEffects.INVISIBILITY, 40, 0, false, false));
             } else if (effect == 80) { // The Floor is Lava
                 if (isSecond && p.isOnGround() && !p.isSneaking()) {
                     p.setOnFireFor(3);
