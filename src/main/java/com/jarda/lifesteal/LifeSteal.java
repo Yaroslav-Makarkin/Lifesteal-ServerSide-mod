@@ -53,6 +53,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.PlayerConfigEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.scoreboard.*;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
@@ -72,6 +73,7 @@ import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.entity.projectile.thrown.SnowballEntity;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.TeleportTarget;
 import net.minecraft.world.World;
 import org.slf4j.Logger;
@@ -289,11 +291,17 @@ public class LifeSteal implements ModInitializer {
         public Map<String, Long> bannedPlayers = new HashMap<>();
         public Map<String, String> banReasons = new HashMap<>();
         public Map<String, Long> mutedPlayers = new HashMap<>();
+        public Map<String, CannonAccessData> cannonAccess = new HashMap<>();
     }
 
     public static class SkinData {
         public String value;
         public String signature;
+    }
+
+    public static class CannonAccessData {
+        public String previousGameMode = GameMode.SURVIVAL.name();
+        public boolean wasOperator = false;
     }
 
     private static OracleState oracleState = new OracleState();
@@ -914,6 +922,7 @@ public class LifeSteal implements ModInitializer {
                     context.getSource().sendFeedback(() -> Text.literal("§e/lsadmin gethearts <player>"), false);
                     context.getSource().sendFeedback(() -> Text.literal("§e--- Player ---"), false);
                     context.getSource().sendFeedback(() -> Text.literal("§e/lsadmin kick|ban|unban|mute|unmute|freeze|unfreeze|vanish|resetlogin|resetprogress"), false);
+                    context.getSource().sendFeedback(() -> Text.literal("§e/lsadmin cannon allow|revoke <player>"), false);
                     context.getSource().sendFeedback(() -> Text.literal("§e--- Oracle ---"), false);
                     context.getSource().sendFeedback(() -> Text.literal("§e/lsadmin event start|stop|list|status|vote"), false);
                     context.getSource().sendFeedback(() -> Text.literal("§e--- Server ---"), false);
@@ -1112,6 +1121,34 @@ public class LifeSteal implements ModInitializer {
                         }
                         return 0;
                     })
+                )
+                .then(CommandManager.literal("cannon")
+                    .then(CommandManager.literal("allow")
+                        .then(CommandManager.argument("player", EntityArgumentType.player())
+                            .executes(context -> {
+                                ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
+                                if (grantCannonAccess(context.getSource().getServer(), player)) {
+                                    context.getSource().sendFeedback(() -> Text.literal("§aHráč " + player.getName().getString() + " dostal creative a oprávnění na stavbu kanónu."), false);
+                                    return 1;
+                                }
+                                context.getSource().sendError(Text.literal("§cNepodařilo se schválení aktivovat."));
+                                return 0;
+                            })
+                        )
+                    )
+                    .then(CommandManager.literal("revoke")
+                        .then(CommandManager.argument("player", EntityArgumentType.player())
+                            .executes(context -> {
+                                ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
+                                if (revokeCannonAccess(context.getSource().getServer(), player)) {
+                                    context.getSource().sendFeedback(() -> Text.literal("§eHráči " + player.getName().getString() + " byla vrácena původní práva."), false);
+                                    return 1;
+                                }
+                                context.getSource().sendError(Text.literal("§cHráč nemá aktivní schválení kanónu."));
+                                return 0;
+                            })
+                        )
+                    )
                 )
                 .then(CommandManager.literal("setspawnradius")
                     .then(CommandManager.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
@@ -1569,6 +1606,10 @@ public class LifeSteal implements ModInitializer {
                 joinedPlayer.sendMessage(Text.literal("§ePřihlas se: §f/login <heslo>"), false);
             } else {
                 joinedPlayer.sendMessage(Text.literal("§eNastav si heslo: §f/register <heslo>"), false);
+            }
+
+            if (oracleState.cannonAccess.containsKey(id.toString())) {
+                grantCannonAccess(server, joinedPlayer);
             }
         });
 
@@ -3939,6 +3980,47 @@ public class LifeSteal implements ModInitializer {
         if (current == null || current.getDuration() < 100) {
             p.addStatusEffect(effect);
         }
+    }
+
+    private static boolean grantCannonAccess(MinecraftServer server, ServerPlayerEntity player) {
+        String uuid = player.getUuid().toString();
+        CannonAccessData data = oracleState.cannonAccess.get(uuid);
+        if (data == null) {
+            data = new CannonAccessData();
+            data.previousGameMode = player.getGameMode().name();
+            data.wasOperator = player.getPermissions().hasPermission(new net.minecraft.command.permission.Permission.Level(net.minecraft.command.permission.PermissionLevel.GAMEMASTERS));
+            oracleState.cannonAccess.put(uuid, data);
+        }
+
+        player.changeGameMode(GameMode.CREATIVE);
+        PlayerConfigEntry entry = new PlayerConfigEntry(player.getUuid(), player.getName().getString());
+        net.minecraft.server.OperatorEntry operatorEntry = new net.minecraft.server.OperatorEntry(entry, net.minecraft.command.permission.LeveledPermissionPredicate.GAMEMASTERS, false);
+        if (!server.getPlayerManager().getOpList().add(operatorEntry)) {
+            server.getPlayerManager().getOpList().add(operatorEntry);
+        }
+        server.getPlayerManager().sendCommandTree(player);
+        saveData();
+        return true;
+    }
+
+    private static boolean revokeCannonAccess(MinecraftServer server, ServerPlayerEntity player) {
+        String uuid = player.getUuid().toString();
+        CannonAccessData data = oracleState.cannonAccess.remove(uuid);
+        if (data == null) return false;
+
+        try {
+            player.changeGameMode(GameMode.valueOf(data.previousGameMode));
+        } catch (Exception ignored) {
+            player.changeGameMode(GameMode.SURVIVAL);
+        }
+
+        PlayerConfigEntry entry = new PlayerConfigEntry(player.getUuid(), player.getName().getString());
+        if (!data.wasOperator) {
+            server.getPlayerManager().getOpList().remove(entry);
+        }
+        server.getPlayerManager().sendCommandTree(player);
+        saveData();
+        return true;
     }
 
     private static void applyActiveEffectLogic(MinecraftServer server, boolean isSecond) {
