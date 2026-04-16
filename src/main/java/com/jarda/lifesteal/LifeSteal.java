@@ -798,6 +798,8 @@ public class LifeSteal implements ModInitializer {
                         context.getSource().sendFeedback(() -> Text.literal("§eJiž neležíš."), false);
                     } else {
                         LAYING_PLAYERS.add(player.getUuid());
+                        player.setPose(EntityPose.SLEEPING);
+                        player.setSleepingPosition(player.getBlockPos());
                         context.getSource().sendFeedback(() -> Text.literal("§aNyní ležíš. Pohybem nebo Shiftem se zvedneš."), false);
                     }
                     return 1;
@@ -829,6 +831,7 @@ public class LifeSteal implements ModInitializer {
                         context.getSource().sendFeedback(() -> Text.literal("§eJiž se neplazíš."), false);
                     } else {
                         CRAWLING_PLAYERS.add(player.getUuid());
+                        player.setPose(EntityPose.SWIMMING);
                         context.getSource().sendFeedback(() -> Text.literal("§aNyní se plazíš. Můžeš se pohybovat. Shiftem se zvedneš."), false);
                     }
                     return 1;
