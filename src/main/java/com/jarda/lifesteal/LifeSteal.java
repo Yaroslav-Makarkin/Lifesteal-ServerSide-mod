@@ -1026,6 +1026,14 @@ public class LifeSteal implements ModInitializer {
                                 p.removeStatusEffect(StatusEffects.GLOWING);
                                 p.removeStatusEffect(StatusEffects.DARKNESS);
                                 p.removeStatusEffect(StatusEffects.HASTE);
+                                p.removeStatusEffect(StatusEffects.MINING_FATIGUE);
+                                p.removeStatusEffect(StatusEffects.HUNGER);
+                                p.removeStatusEffect(StatusEffects.LUCK);
+                                p.removeStatusEffect(StatusEffects.NAUSEA);
+                                p.removeStatusEffect(StatusEffects.NIGHT_VISION);
+                                p.removeStatusEffect(StatusEffects.WITHER);
+                                p.removeStatusEffect(StatusEffects.WEAKNESS);
+                                p.removeStatusEffect(StatusEffects.HERO_OF_THE_VILLAGE);
 
                                 if (endingEffect == 71) {
                                     EntityAttributeInstance hpAttr = p.getAttributeInstance(EntityAttributes.MAX_HEALTH);
@@ -3614,6 +3622,14 @@ public class LifeSteal implements ModInitializer {
                  p.removeStatusEffect(StatusEffects.GLOWING);
                  p.removeStatusEffect(StatusEffects.DARKNESS);
                  p.removeStatusEffect(StatusEffects.HASTE);
+                 p.removeStatusEffect(StatusEffects.MINING_FATIGUE);
+                 p.removeStatusEffect(StatusEffects.HUNGER);
+                 p.removeStatusEffect(StatusEffects.LUCK);
+                 p.removeStatusEffect(StatusEffects.NAUSEA);
+                 p.removeStatusEffect(StatusEffects.NIGHT_VISION);
+                 p.removeStatusEffect(StatusEffects.WITHER);
+                 p.removeStatusEffect(StatusEffects.WEAKNESS);
+                 p.removeStatusEffect(StatusEffects.HERO_OF_THE_VILLAGE);
                  // Reset base HP ONLY if Double Health (71) was active
                  if (endingEffect == 71) {
                      EntityAttributeInstance hpAttr = p.getAttributeInstance(EntityAttributes.MAX_HEALTH);
@@ -3629,11 +3645,26 @@ public class LifeSteal implements ModInitializer {
                      }
                  }
              }
+             // Reset world time if Eternal Day (6) or Eternal Night (5) was active
+             if (endingEffect == 5 || endingEffect == 6) {
+                 for (ServerWorld sw : server.getWorlds()) {
+                     sw.setTimeOfDay(sw.getTimeOfDay() + 1);
+                 }
+             }
              oracleState.currentActiveEffect = 0;
              oracleState.isEventActive = false;
              oracleState.effectEndTime = 0;
              oracleState.lastAntiSnowballRun = 0;
              SHARED_FATE_LINKS.clear();
+             LAYING_PLAYERS.clear();
+             CRAWLING_PLAYERS.clear();
+             // Reset all players to standing pose
+             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                 if (p.getPose() != EntityPose.STANDING) {
+                     p.setPose(EntityPose.STANDING);
+                     p.clearSleepingPosition();
+                 }
+             }
              saveData();
         }
     }
@@ -4240,13 +4271,15 @@ public class LifeSteal implements ModInitializer {
             } else if (effect == 71) { // Double Health
                 // Handled via attribute update above
             } else if (effect == 72) { // Glass World
-                if (p.hurtTime > 0) {
-                    addEffect(p, new StatusEffectInstance(StatusEffects.WEAKNESS, 100, 1));
+                // Blocks break easily + extra damage taken
+                if (isSecond && sw.random.nextFloat() < 0.2 && p.hurtTime > 0) {
+                    p.damage(sw, sw.getDamageSources().generic(), 1.0f);
                 }
             } else if (effect == 73) { // Fireproof
                 addEffect(p, new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 40, 0, false, false));
             } else if (effect == 75) { // Shield Master
-                addEffect(p, new StatusEffectInstance(StatusEffects.RESISTANCE, 40, 0, false, false));
+                addEffect(p, new StatusEffectInstance(StatusEffects.RESISTANCE, 40, 1, false, false));
+                addEffect(p, new StatusEffectInstance(StatusEffects.ABSORPTION, 40, 0, false, false));
             } else if (effect == 74) { // Infinite Fireworks
                 addEffect(p, new StatusEffectInstance(StatusEffects.LUCK, 40, 0, false, false));
             } else if (effect == 76) { // Loot Boxes
