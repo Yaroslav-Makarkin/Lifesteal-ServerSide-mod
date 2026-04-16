@@ -3,9 +3,7 @@ package com.jarda.lifesteal;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import com.mojang.authlib.properties.PropertyMap;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -3031,41 +3029,6 @@ public class LifeSteal implements ModInitializer {
         NbtCompound nbt = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT).copyNbt();
         nbt.putBoolean("lifesteal:unmodifiable", true);
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
-    }
-
-    private static void refreshSkin(ServerPlayerEntity player) {
-        MinecraftServer server = player.getCommandSource().getServer();
-        if (server == null) return;
-
-        // Apply saved texture data if present.
-        if (oracleState.savedSkins.containsKey(player.getUuid().toString())) {
-            SkinData data = oracleState.savedSkins.get(player.getUuid().toString());
-            GameProfile profile = player.getGameProfile();
-            try {
-                java.lang.reflect.Method getProps = profile.getClass().getMethod("getProperties");
-                PropertyMap props = (PropertyMap) getProps.invoke(profile);
-                props.removeAll("textures");
-                props.put("textures", new Property("textures", data.value, data.signature));
-            } catch (Exception e) {
-                LOGGER.error("Failed to apply saved skin properties: ", e);
-            }
-        }
-        
-        server.getPlayerManager().sendToAll(new PlayerRemoveS2CPacket(List.of(player.getUuid())));
-        server.getPlayerManager().sendToAll(new PlayerListS2CPacket(EnumSet.of(PlayerListS2CPacket.Action.ADD_PLAYER), List.of(player)));
-        
-        ServerWorld world = (ServerWorld) player.getCommandSource().getWorld();
-        for (ServerPlayerEntity observer : server.getPlayerManager().getPlayerList()) {
-            if (observer == player) {
-                player.networkHandler.sendPacket(new PlayerRespawnS2CPacket(player.createCommonPlayerSpawnInfo(world), (byte)3));
-                player.networkHandler.requestTeleport(player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch());
-                server.getPlayerManager().sendCommandTree(player);
-            } else if (observer.getCommandSource().getWorld() == player.getCommandSource().getWorld()) {
-                observer.networkHandler.sendPacket(new EntitiesDestroyS2CPacket(player.getId()));
-                observer.networkHandler.sendPacket(new EntitySpawnS2CPacket(player, 0, player.getBlockPos()));
-                observer.networkHandler.sendPacket(new EntityTrackerUpdateS2CPacket(player.getId(), player.getDataTracker().getChangedEntries()));
-            }
-        }
     }
 
     public static void updateMaxHealth(ServerPlayerEntity player, double amount) {
