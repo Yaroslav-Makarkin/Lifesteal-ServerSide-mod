@@ -3985,7 +3985,8 @@ public class LifeSteal implements ModInitializer {
             } else if (effect == 3) { // Acid Rain
                 if (sw.isRaining() && sw.isSkyVisible(p.getBlockPos())) {
                     if (p.getInventory().getStack(39).isEmpty()) {
-                        addEffect(p, new StatusEffectInstance(StatusEffects.POISON, 40, 0));
+                        addEffect(p, new StatusEffectInstance(StatusEffects.POISON, 80, 1));
+                        if (isSecond) p.damage(sw, sw.getDamageSources().drown(), 0.5f);
                     }
                 }
             } else if (effect == 4) { // Healing Drizzle
@@ -4225,7 +4226,8 @@ public class LifeSteal implements ModInitializer {
                 }
             } else if (effect == 69) { // Toxic Water
                 if (p.isSubmergedInWater() || p.isTouchingWater()) {
-                    addEffect(p, new StatusEffectInstance(StatusEffects.POISON, 40, 0));
+                    addEffect(p, new StatusEffectInstance(StatusEffects.POISON, 80, 1));
+                    if (isSecond) p.damage(sw, sw.getDamageSources().drown(), 0.5f);
                 }
             } else if (effect == 70) { // Armor Weight
                 int armorPieces = 0;
