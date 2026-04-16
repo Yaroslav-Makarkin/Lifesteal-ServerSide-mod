@@ -4280,6 +4280,7 @@ public class LifeSteal implements ModInitializer {
             } else if (effect == 75) { // Shield Master
                 addEffect(p, new StatusEffectInstance(StatusEffects.RESISTANCE, 40, 1, false, false));
                 addEffect(p, new StatusEffectInstance(StatusEffects.ABSORPTION, 40, 0, false, false));
+                addEffect(p, new StatusEffectInstance(StatusEffects.STRENGTH, 40, 0, false, false));
             } else if (effect == 74) { // Infinite Fireworks
                 addEffect(p, new StatusEffectInstance(StatusEffects.LUCK, 40, 0, false, false));
             } else if (effect == 76) { // Loot Boxes
