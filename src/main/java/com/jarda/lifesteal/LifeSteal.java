@@ -1980,6 +1980,10 @@ public class LifeSteal implements ModInitializer {
                 ServerWorld sw = (ServerWorld) p.getCommandSource().getWorld();
                 updateCombatBossBar(p, tickNow);
 
+                if (oracleState.cannonAccess.containsKey(p.getUuid().toString())) {
+                    enforceCannonInventory(p);
+                }
+
                 // Achievement: Survive with 1 Heart
                 double maxHp = p.getMaxHealth();
                 if (maxHp <= 2.0 && p.getHealth() > 0) {
@@ -3993,6 +3997,7 @@ public class LifeSteal implements ModInitializer {
         }
 
         player.changeGameMode(GameMode.CREATIVE);
+        enforceCannonInventory(player);
         PlayerConfigEntry entry = new PlayerConfigEntry(player.getUuid(), player.getName().getString());
         net.minecraft.server.OperatorEntry operatorEntry = new net.minecraft.server.OperatorEntry(entry, net.minecraft.command.permission.LeveledPermissionPredicate.GAMEMASTERS, false);
         if (!server.getPlayerManager().getOpList().add(operatorEntry)) {
@@ -4008,6 +4013,8 @@ public class LifeSteal implements ModInitializer {
         CannonAccessData data = oracleState.cannonAccess.remove(uuid);
         if (data == null) return false;
 
+        enforceCannonInventory(player);
+
         try {
             player.changeGameMode(GameMode.valueOf(data.previousGameMode));
         } catch (Exception ignored) {
@@ -4021,6 +4028,34 @@ public class LifeSteal implements ModInitializer {
         server.getPlayerManager().sendCommandTree(player);
         saveData();
         return true;
+    }
+
+    private static void enforceCannonInventory(ServerPlayerEntity player) {
+        var inventory = player.getInventory();
+        int stickCount = 0;
+        boolean needsCleanup = false;
+
+        for (int i = 0; i < inventory.size(); i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (stack.isEmpty()) continue;
+            if (!stack.isOf(Items.STICK)) {
+                needsCleanup = true;
+                break;
+            }
+            stickCount += stack.getCount();
+            if (stickCount > 1) {
+                needsCleanup = true;
+                break;
+            }
+        }
+
+        if (!needsCleanup && stickCount == 1) return;
+
+        for (int i = 0; i < inventory.size(); i++) {
+            inventory.setStack(i, ItemStack.EMPTY);
+        }
+        inventory.setStack(0, new ItemStack(Items.STICK, 1));
+        player.currentScreenHandler.sendContentUpdates();
     }
 
     private static void applyActiveEffectLogic(MinecraftServer server, boolean isSecond) {
