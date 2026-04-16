@@ -156,10 +156,10 @@ public class LifeSteal implements ModInitializer {
     private static final Map<Integer, String> EVENT_NAMES = new HashMap<>();
     private static final Set<Integer> IMPLEMENTED_EVENTS = Set.of(
         1, 2, 3, 4, 5, 6, 7, 8, 9,
-        11, 13, 14, 15, 16, 17, 19, 20,
-        25, 26, 28, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-        41, 42, 43, 47, 48,
-        53, 55, 56, 58, 59,
+        11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+        21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+        51, 52, 53, 54, 55, 56, 58, 59,
         67, 68, 69, 70, 71, 72, 73, 75, 76, 77, 78, 80, 81
     );
     static {
@@ -197,7 +197,7 @@ public class LifeSteal implements ModInitializer {
         EVENT_NAMES.put(29, "Air Support");
         EVENT_NAMES.put(30, "Fire Attack");
         // Category: Player Mechanics
-        EVENT_NAMES.put(31, "Shared Hunger");
+        EVENT_NAMES.put(31, "Shared Health");
         EVENT_NAMES.put(32, "Vampire Weekend");
         EVENT_NAMES.put(33, "Fragile Bones");
         EVENT_NAMES.put(34, "Speedrunner");
@@ -352,7 +352,7 @@ public class LifeSteal implements ModInitializer {
             
             // Oracle Logic: Vampire Weekend (32)
             if (oracleState.currentActiveEffect == 32 && source.getAttacker() instanceof ServerPlayerEntity attacker) {
-                attacker.heal(amount * 0.25f); // Heals 25% of damage dealt
+                attacker.heal(Math.min(4.0f, amount * 0.20f)); // Heals up to 2 hearts per hit
             }
 
             // Oracle Logic: Shared Fate/Hunger (31)
@@ -374,6 +374,11 @@ public class LifeSteal implements ModInitializer {
             
             // Oracle Logic: Pacifism (39)
             if (oracleState.currentActiveEffect == 39 && entity instanceof ServerPlayerEntity && source.getAttacker() instanceof ServerPlayerEntity) {
+                return false;
+            }
+
+            // Oracle Logic: Friendly Mobs (24)
+            if (oracleState.currentActiveEffect == 24 && entity instanceof ServerPlayerEntity && source.getAttacker() instanceof HostileEntity) {
                 return false;
             }
 
@@ -412,6 +417,24 @@ public class LifeSteal implements ModInitializer {
                         stack.decrement(1);
                         return ActionResult.SUCCESS;
                     }
+                }
+            }
+
+            // Lost Compass (12): compasses/maps are disrupted
+            if (oracleState.currentActiveEffect == 12 && (stack.isOf(Items.COMPASS) || stack.isOf(Items.RECOVERY_COMPASS) || stack.isOf(Items.FILLED_MAP) || stack.isOf(Items.MAP))) {
+                if (player instanceof ServerPlayerEntity sp) {
+                    sp.sendMessage(Text.literal("§cKompas i mapy jsou během eventu Ztracený kompas nestabilní!"), true);
+                }
+                return ActionResult.FAIL;
+            }
+
+            // Lava fishing (49): right-click fishing rod while touching lava can grant loot
+            if (oracleState.currentActiveEffect == 49 && stack.isOf(Items.FISHING_ROD) && (player.isInLava() || player.getEntityWorld().getBlockState(player.getBlockPos().down()).isOf(Blocks.LAVA))) {
+                if (world.random.nextFloat() < 0.12f) {
+                    Item[] lavaLoot = {Items.BLAZE_ROD, Items.MAGMA_CREAM, Items.GOLD_INGOT, Items.QUARTZ, Items.OBSIDIAN};
+                    ItemStack reward = new ItemStack(lavaLoot[world.random.nextInt(lavaLoot.length)], world.random.nextInt(2) + 1);
+                    if (!player.getInventory().insertStack(reward.copy())) player.dropItem(reward, false);
+                    world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENTITY_FISHING_BOBBER_RETRIEVE, SoundCategory.PLAYERS, 0.8f, 0.8f);
                 }
             }
             // New items logic
@@ -471,6 +494,23 @@ public class LifeSteal implements ModInitializer {
                     sp.sendMessage(Text.literal("§cOkolí spawnu je chráněno!"), true);
                     return ActionResult.FAIL;
                 }
+
+                // No Craft (50)
+                if (oracleState.currentActiveEffect == 50 && state.isOf(Blocks.CRAFTING_TABLE)) {
+                    sp.sendMessage(Text.literal("§cBěhem eventu No Craft je crafting table zablokovaný."), true);
+                    return ActionResult.FAIL;
+                }
+
+                // Expensive Crafting (44)
+                if (oracleState.currentActiveEffect == 44 && state.isOf(Blocks.CRAFTING_TABLE)) {
+                    if (!hasItems(sp, Items.IRON_NUGGET, 1)) {
+                        sp.sendMessage(Text.literal("§cBěhem eventu Expensive Crafting potřebuješ 1x Iron Nugget na otevření craftingu."), true);
+                        return ActionResult.FAIL;
+                    }
+                    removeItems(sp, Items.IRON_NUGGET, 1);
+                    sp.sendMessage(Text.literal("§eExpensive Crafting: zaplaceno 1x Iron Nugget."), true);
+                }
+
                 if (!sp.isCreative() && isInsideEndShip(world, hitResult.getBlockPos())) {
                     sp.sendMessage(Text.literal("§cTato loď je chráněna strážcem!"), true);
                     return ActionResult.FAIL;
@@ -527,6 +567,14 @@ public class LifeSteal implements ModInitializer {
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
             if (player instanceof ServerPlayerEntity sp && !LOGGED_IN.contains(sp.getUuid())) {
                 sp.sendMessage(Text.literal("§cMusíš se nejprve přihlásit: /login <heslo>"), true);
+                return ActionResult.FAIL;
+            }
+
+            // Villagers on Strike (15)
+            if (!world.isClient() && oracleState.currentActiveEffect == 15 && entity instanceof net.minecraft.entity.passive.VillagerEntity) {
+                if (player instanceof ServerPlayerEntity sp) {
+                    sp.sendMessage(Text.literal("§cVesničané během eventu stávkují a neobchodují."), true);
+                }
                 return ActionResult.FAIL;
             }
             return ActionResult.PASS;
@@ -1721,6 +1769,14 @@ public class LifeSteal implements ModInitializer {
                 ItemEntity itemEntity = new ItemEntity(entity.getEntityWorld(), entity.getX(), entity.getY(), entity.getZ(), gold);
                 entity.getEntityWorld().spawnEntity(itemEntity);
             }
+
+            // Random Drop (45)
+            if (oracleState.currentActiveEffect == 45 && !(entity instanceof ServerPlayerEntity)) {
+                Item[] randomDrops = {Items.BONE, Items.STRING, Items.GUNPOWDER, Items.IRON_INGOT, Items.REDSTONE, Items.ARROW, Items.BREAD};
+                ItemStack random = new ItemStack(randomDrops[entity.getEntityWorld().random.nextInt(randomDrops.length)], entity.getEntityWorld().random.nextInt(2) + 1);
+                ItemEntity randomEntity = new ItemEntity(entity.getEntityWorld(), entity.getX(), entity.getY(), entity.getZ(), random);
+                entity.getEntityWorld().spawnEntity(randomEntity);
+            }
         });
 
         // Zablokování interakce s Item Frame v Endu (Elytra protection)
@@ -1829,6 +1885,26 @@ public class LifeSteal implements ModInitializer {
                 });
             }
 
+            // Giant Invasion (21)
+            if (oracleState.currentActiveEffect == 21 && isSecond) {
+                server.getWorlds().forEach(world -> {
+                    world.getPlayers().forEach(player -> {
+                        if (world.random.nextFloat() < 0.008f) {
+                            for (int i = 0; i < 2; i++) {
+                                var zombie = EntityType.ZOMBIE.create(world, net.minecraft.entity.SpawnReason.EVENT);
+                                if (zombie != null) {
+                                    zombie.refreshPositionAndAngles(player.getX() + world.random.nextInt(20) - 10, player.getY(), player.getZ() + world.random.nextInt(20) - 10, 0.0f, 0.0f);
+                                    EntityAttributeInstance scale = zombie.getAttributeInstance(EntityAttributes.SCALE);
+                                    if (scale != null) scale.setBaseValue(1.5);
+                                    zombie.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 20 * 30, 0, false, false));
+                                    world.spawnEntity(zombie);
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+
             // Zombie Apocalypse (78) - zombie spawns at night
             if (oracleState.currentActiveEffect == 78 && isSecond) {
                 server.getWorlds().forEach(world -> {
@@ -1840,6 +1916,19 @@ public class LifeSteal implements ModInitializer {
                                 }
                             }
                         });
+                    }
+                });
+            }
+
+            // King of the Hill (51)
+            if (oracleState.currentActiveEffect == 51 && isSecond && oracleState.spawnSet) {
+                server.getPlayerManager().getPlayerList().forEach(player -> {
+                    if (!player.getEntityWorld().getRegistryKey().getValue().toString().equals(oracleState.spawnDimension)) return;
+                    double dx = player.getX() - oracleState.spawnX;
+                    double dz = player.getZ() - oracleState.spawnZ;
+                    if ((dx * dx + dz * dz) <= 10 * 10) {
+                        player.addExperience(3);
+                        player.sendMessage(Text.literal("§eKing of the Hill: +3 XP za držení kopce."), true);
                     }
                 });
             }
@@ -2496,6 +2585,24 @@ public class LifeSteal implements ModInitializer {
         }
     }
 
+    private static boolean removeRandomInventoryItem(ServerPlayerEntity player) {
+        List<Integer> candidates = new ArrayList<>();
+        for (int i = 0; i < player.getInventory().size(); i++) {
+            ItemStack stack = player.getInventory().getStack(i);
+            if (!stack.isEmpty()) {
+                candidates.add(i);
+            }
+        }
+        if (candidates.isEmpty()) {
+            return false;
+        }
+        int slot = candidates.get(player.getEntityWorld().random.nextInt(candidates.size()));
+        player.getInventory().setStack(slot, ItemStack.EMPTY);
+        player.getInventory().markDirty();
+        player.playerScreenHandler.sendContentUpdates();
+        return true;
+    }
+
     private static void addItems(ServerPlayerEntity player, Item item, int count) {
         ItemStack refund = new ItemStack(item, count);
         if (!player.getInventory().insertStack(refund)) {
@@ -2745,8 +2852,9 @@ public class LifeSteal implements ModInitializer {
 
         EntityAttributeInstance healthAttr = boss.getAttributeInstance(EntityAttributes.MAX_HEALTH);
         if (healthAttr != null) {
-            healthAttr.setBaseValue(500.0);
-            boss.setHealth(500.0F);
+            double bossHp = oracleState.currentActiveEffect == 27 ? 1000.0 : 500.0;
+            healthAttr.setBaseValue(bossHp);
+            boss.setHealth((float) bossHp);
         }
         
         boss.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 20*60*60, 1));
@@ -3772,8 +3880,8 @@ public class LifeSteal implements ModInitializer {
             case 28 -> "Hordy — Mobi se spawnují ve větších skupinách.";
             case 29 -> "Letecká podpora — Phantomové pomáhají hráčům.";
             case 30 -> "Ohnivý útok — Zásah tě zapálí.";
-            case 31 -> "Sdílený hlad — Dva náhodní hráči jsou propojeni — zranění jednoho zraní oba.";
-            case 32 -> "Vampírský víkend — Útokem léčíš 25% udaného poškození.";
+            case 31 -> "Sdílené zdraví — Dva náhodní hráči jsou propojeni, zranění jednoho zraní oba.";
+            case 32 -> "Vampírský víkend — Útokem léčíš 20% udaného poškození (max 2 srdce na zásah).";
             case 33 -> "Křehké kosti — Pád z výšky způsobuje extra poškození.";
             case 34 -> "Speedrunner — Všichni mají Speed II.";
             case 35 -> "Těžký batoh — Hráči jsou pomalejší (Slowness).";
@@ -3896,20 +4004,39 @@ public class LifeSteal implements ModInitializer {
                         item.setVelocity(item.getVelocity().add(dir));
                     });
                 }
+            } else if (effect == 12) { // Lost Compass
+                addEffect(p, new StatusEffectInstance(StatusEffects.NAUSEA, 40, 0, false, false));
             } else if (effect == 14) { // Diamond Inflation - mining speed reduced
                 addEffect(p, new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 40, 0, false, false));
             } else if (effect == 15) { // Villagers on Strike - no trading hint
                 // Handled via UseEntityCallback check
             } else if (effect == 16) { // Happy Trader
                 addEffect(p, new StatusEffectInstance(StatusEffects.HERO_OF_THE_VILLAGE, 40, 1, false, false));
+            } else if (effect == 18) { // Wealth Tax
+                if (isSecond && sw.random.nextFloat() < 0.01f && removeRandomInventoryItem(p)) {
+                    p.sendMessage(Text.literal("§6Daň z bohatství: ztratil jsi 1 náhodný stack."), true);
+                }
             } else if (effect == 19) { // Barter Trade - Luck for bartering
                 addEffect(p, new StatusEffectInstance(StatusEffects.LUCK, 40, 1, false, false));
             } else if (effect == 20) { // XP Bonus
                 if (isSecond && sw.random.nextFloat() < 0.25) p.addExperience(2);
+            } else if (effect == 21) { // Giant Invasion
+                addEffect(p, new StatusEffectInstance(StatusEffects.RESISTANCE, 40, 0, false, false));
+            } else if (effect == 22) { // Invisible Creepers
+                Box box = p.getBoundingBox().expand(24);
+                sw.getEntitiesByClass(CreeperEntity.class, box, c -> c.isAlive()).forEach(c -> c.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 60, 0, false, false)));
+            } else if (effect == 23) { // Fast Skeletons
+                Box box = p.getBoundingBox().expand(24);
+                sw.getEntitiesByClass(net.minecraft.entity.mob.SkeletonEntity.class, box, s -> s.isAlive()).forEach(s -> s.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 60, 1, false, false)));
+            } else if (effect == 24) { // Friendly Mobs
+                addEffect(p, new StatusEffectInstance(StatusEffects.REGENERATION, 40, 0, false, false));
             } else if (effect == 25) { // Spider Web - slowness when hit
                 if (p.hurtTime > 0) {
                     addEffect(p, new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 1));
                 }
+            } else if (effect == 29) { // Air Support
+                addEffect(p, new StatusEffectInstance(StatusEffects.SLOW_FALLING, 40, 0, false, false));
+                addEffect(p, new StatusEffectInstance(StatusEffects.NIGHT_VISION, 240, 0, false, false));
             } else if (effect == 30) { // Fire Attack
                 if (p.hurtTime > 0 && !p.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
                     p.setOnFireFor(3);
@@ -3965,6 +4092,41 @@ public class LifeSteal implements ModInitializer {
                 }
             } else if (effect == 43) { // Indestructible Tools
                 addEffect(p, new StatusEffectInstance(StatusEffects.HASTE, 40, 0, false, false));
+                ItemStack mainHand = p.getMainHandStack();
+                if (mainHand != null && mainHand.isDamageable()) {
+                    mainHand.setDamage(0);
+                }
+                ItemStack offHand = p.getOffHandStack();
+                if (offHand != null && offHand.isDamageable()) {
+                    offHand.setDamage(0);
+                }
+            } else if (effect == 44) { // Expensive Crafting
+                addEffect(p, new StatusEffectInstance(StatusEffects.HUNGER, 40, 0, false, false));
+            } else if (effect == 46) { // Strong Furnace
+                addEffect(p, new StatusEffectInstance(StatusEffects.HASTE, 40, 1, false, false));
+            } else if (effect == 49) { // Lava fishing
+                addEffect(p, new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 40, 0, false, false));
+            } else if (effect == 50) { // No Craft
+                addEffect(p, new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 40, 0, false, false));
+            } else if (effect == 51) { // King of the Hill
+                addEffect(p, new StatusEffectInstance(StatusEffects.STRENGTH, 40, 0, false, false));
+            } else if (effect == 52) { // Last Survivor
+                if (p.getHealth() <= 8.0f) {
+                    addEffect(p, new StatusEffectInstance(StatusEffects.RESISTANCE, 40, 1, false, false));
+                } else {
+                    addEffect(p, new StatusEffectInstance(StatusEffects.WEAKNESS, 40, 0, false, false));
+                }
+            } else if (effect == 54) { // Collection
+                if (isSecond && hasItems(p, Items.ROTTEN_FLESH, 1) && hasItems(p, Items.BONE, 1) && hasItems(p, Items.STRING, 1) && hasItems(p, Items.GUNPOWDER, 1)) {
+                    removeItems(p, Items.ROTTEN_FLESH, 1);
+                    removeItems(p, Items.BONE, 1);
+                    removeItems(p, Items.STRING, 1);
+                    removeItems(p, Items.GUNPOWDER, 1);
+                    ItemStack reward = new ItemStack(Items.EMERALD, 2);
+                    if (!p.getInventory().insertStack(reward.copy())) p.dropItem(reward, false);
+                    p.addExperience(5);
+                    p.sendMessage(Text.literal("§aCollection splněna: +2 Emeraldy a +5 XP."), true);
+                }
             } else if (effect == 58) { // Mini-Players
                 EntityAttributeInstance scaleAttr = p.getAttributeInstance(EntityAttributes.SCALE);
                 if (scaleAttr != null && scaleAttr.getBaseValue() != 0.5) scaleAttr.setBaseValue(0.5);
