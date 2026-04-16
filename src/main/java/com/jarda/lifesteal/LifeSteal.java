@@ -140,6 +140,36 @@ public class LifeSteal implements ModInitializer {
     private static final Map<UUID, Integer> PLAYER_VOTES = new HashMap<>();
     private static final Map<Integer, Integer> VOTE_COUNTS = new HashMap<>();
     private static final Map<UUID, UUID> SHARED_FATE_LINKS = new HashMap<>();
+    private static final Set<String> CANNON_BLOCKED_SETBLOCK_BLOCKS = Set.of(
+        "diamond_block",
+        "minecraft:diamond_block",
+        "emerald_block",
+        "minecraft:emerald_block",
+        "gold_block",
+        "minecraft:gold_block",
+        "netherite_block",
+        "minecraft:netherite_block",
+        "ancient_debris",
+        "minecraft:ancient_debris",
+        "beacon",
+        "minecraft:beacon",
+        "spawner",
+        "minecraft:spawner",
+        "command_block",
+        "minecraft:command_block",
+        "repeating_command_block",
+        "minecraft:repeating_command_block",
+        "chain_command_block",
+        "minecraft:chain_command_block",
+        "structure_block",
+        "minecraft:structure_block",
+        "jigsaw",
+        "minecraft:jigsaw",
+        "barrier",
+        "minecraft:barrier",
+        "bedrock",
+        "minecraft:bedrock"
+    );
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path dataPath;
     private static Path oraclePath;
@@ -3984,6 +4014,31 @@ public class LifeSteal implements ModInitializer {
         if (current == null || current.getDuration() < 100) {
             p.addStatusEffect(effect);
         }
+    }
+
+    public static boolean isCannonAccessPlayer(ServerPlayerEntity player) {
+        return oracleState.cannonAccess.containsKey(player.getUuid().toString());
+    }
+
+    public static boolean isBlockedCannonSetblockCommand(String command) {
+        if (command == null) return false;
+        String normalized = command.trim();
+        if (normalized.startsWith("/")) {
+            normalized = normalized.substring(1).trim();
+        }
+        if (!normalized.toLowerCase(Locale.ROOT).startsWith("setblock ")) {
+            return false;
+        }
+
+        String[] parts = normalized.split("\\s+");
+        if (parts.length < 5) return false;
+
+        String blockId = parts[4].toLowerCase(Locale.ROOT);
+        int stateSep = blockId.indexOf('[');
+        if (stateSep >= 0) {
+            blockId = blockId.substring(0, stateSep);
+        }
+        return CANNON_BLOCKED_SETBLOCK_BLOCKS.contains(blockId);
     }
 
     private static boolean grantCannonAccess(MinecraftServer server, ServerPlayerEntity player) {
