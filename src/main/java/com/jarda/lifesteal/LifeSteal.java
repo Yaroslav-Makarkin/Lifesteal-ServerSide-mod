@@ -2,8 +2,6 @@ package com.jarda.lifesteal;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
@@ -82,10 +80,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -121,7 +115,6 @@ public class LifeSteal implements ModInitializer {
 
     public static final Map<UUID, SimpleInventory> OPEN_SHOPS = new HashMap<>();
     public static final Map<UUID, String> OPEN_MENUS = new HashMap<>(); // UUID -> menu type
-    private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private static final Map<UUID, Vec3d> LAST_POS = new HashMap<>();
     private static final Map<UUID, Long> SURVIVAL_TIMER = new HashMap<>();
     private static final Map<UUID, Integer> IN_AIR_TICKS = new HashMap<>();
