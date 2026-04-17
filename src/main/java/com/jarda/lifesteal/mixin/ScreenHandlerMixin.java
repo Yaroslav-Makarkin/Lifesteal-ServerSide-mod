@@ -27,7 +27,7 @@ public abstract class ScreenHandlerMixin {
 
         ScreenHandler handler = (ScreenHandler) (Object) this;
 
-        // Block modifications of "Index" (unmodifiable) items in anvil/grindstone
+        // Block repair/combine/disenchant for kit-locked items.
         if (handler instanceof AnvilScreenHandler || handler instanceof GrindstoneScreenHandler) {
             if (slotIndex >= 0 && slotIndex <= 2) {
                 ItemStack in0 = handler.getSlot(0).getStack();
@@ -36,7 +36,7 @@ public abstract class ScreenHandlerMixin {
                 ItemStack clicked = handler.getSlot(slotIndex).getStack();
                 if (LifeSteal.isUnmodifiable(in0) || LifeSteal.isUnmodifiable(in1) || LifeSteal.isUnmodifiable(out) || LifeSteal.isUnmodifiable(clicked)) {
                     ci.cancel();
-                    serverPlayer.sendMessage(Text.literal("§cTento předmět je uzamčený (Index) a nelze jej upravit."), true);
+                    serverPlayer.sendMessage(Text.literal("§cKit item nelze upravovat v kovadlině ani brusce."), true);
                     handler.syncState();
                     return;
                 }
@@ -86,7 +86,7 @@ public abstract class ScreenHandlerMixin {
         if (handler instanceof EnchantmentScreenHandler && !handler.getSlot(0).getStack().isEmpty()) {
             ItemStack toEnchant = handler.getSlot(0).getStack();
             if (LifeSteal.isUnmodifiable(toEnchant)) {
-                serverPlayer.sendMessage(Text.literal("§cTento předmět je uzamčený (Index) a nelze jej enchantit."), true);
+                serverPlayer.sendMessage(Text.literal("§cKit item nelze enchantit."), true);
                 handler.syncState();
                 cir.setReturnValue(false);
             }

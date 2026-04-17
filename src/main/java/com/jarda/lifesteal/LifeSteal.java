@@ -3016,7 +3016,12 @@ public class LifeSteal implements ModInitializer {
     public static boolean isUnmodifiable(ItemStack stack) {
         if (stack.isEmpty()) return false;
         NbtComponent nbtComponent = stack.get(DataComponentTypes.CUSTOM_DATA);
-        return nbtComponent != null && nbtComponent.copyNbt().contains("lifesteal:unmodifiable");
+        if (nbtComponent == null) return false;
+        NbtCompound nbt = nbtComponent.copyNbt();
+        // Primary marker required by server rules.
+        if (nbt.contains("KitItem") && nbt.getBoolean("KitItem").orElse(false)) return true;
+        // Backward compatibility for already issued kit items.
+        return nbt.contains("lifesteal:unmodifiable") && nbt.getBoolean("lifesteal:unmodifiable").orElse(false);
     }
 
     private static void applyKitIndex(ItemStack stack) {
@@ -3026,6 +3031,7 @@ public class LifeSteal implements ModInitializer {
         stack.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
         
         NbtCompound nbt = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT).copyNbt();
+        nbt.putBoolean("KitItem", true);
         nbt.putBoolean("lifesteal:unmodifiable", true);
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
     }
