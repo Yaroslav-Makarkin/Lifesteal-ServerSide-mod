@@ -127,8 +127,9 @@ public class LifeSteal implements ModInitializer {
     private static final Set<UUID> LAYING_PLAYERS = new HashSet<>();
     private static final Set<UUID> CRAWLING_PLAYERS = new HashSet<>();
     private static final Map<UUID, Long> COMBAT_TAGS = new HashMap<>();
+    private static final Map<UUID, UUID> COMBAT_LAST_ATTACKER = new HashMap<>();
     private static final Map<UUID, ServerBossBar> COMBAT_BOSSBARS = new HashMap<>();
-    private static final long COMBAT_TAG_DURATION_MS = 15000L;
+    private static final long COMBAT_TAG_DURATION_MS = 120000L;
     private static final Map<UUID, Long> JOIN_TIMES = new HashMap<>();
     // Admin features
     private static final Set<UUID> FROZEN_PLAYERS = new HashSet<>();
@@ -317,6 +318,7 @@ public class LifeSteal implements ModInitializer {
             OPEN_MENUS.clear();
             SHOP_COOLDOWNS.clear();
             COMBAT_TAGS.clear();
+            COMBAT_LAST_ATTACKER.clear();
             clearAllCombatBossBars();
             SHARED_FATE_LINKS.clear();
             BOSS_ATTACK_TIMER.clear();
@@ -346,6 +348,7 @@ public class LifeSteal implements ModInitializer {
                 long now = System.currentTimeMillis();
                 applyCombatTag(victim, now);
                 applyCombatTag(killer, now);
+                COMBAT_LAST_ATTACKER.put(victim.getUuid(), killer.getUuid());
             }
             
             // Oracle Logic: Vampire Weekend (32)
@@ -731,6 +734,7 @@ public class LifeSteal implements ModInitializer {
                         return 0;
                     } else if (combatUntil != null) {
                         COMBAT_TAGS.remove(player.getUuid());
+                        COMBAT_LAST_ATTACKER.remove(player.getUuid());
                         removeCombatBossBar(player.getUuid());
                     }
                     if (teleportToConfiguredSpawn(player)) {
@@ -1639,13 +1643,33 @@ public class LifeSteal implements ModInitializer {
             UUID uuid = handler.player.getUuid();
             if (COMBAT_TAGS.remove(uuid) != null) {
                 try {
-                    updateMaxHealth(handler.player, -2.0);
-                    updatePlayerStats(handler.player);
-                    server.getPlayerManager().broadcast(Text.literal("§c" + handler.player.getName().getString() + " se odpojil z boje a přišel o srdce!"), false);
+                    UUID attackerUuid = COMBAT_LAST_ATTACKER.remove(uuid);
+                    ServerPlayerEntity attacker = attackerUuid != null ? server.getPlayerManager().getPlayer(attackerUuid) : null;
+
+                    if (attacker != null && !attacker.getUuid().equals(uuid)) {
+                        updateMaxHealth(attacker, 2.0);
+                        updatePlayerStats(attacker);
+
+                        int stolen = oracleState.totalHeartsStolen.getOrDefault(attacker.getUuid().toString(), 0) + 1;
+                        oracleState.totalHeartsStolen.put(attacker.getUuid().toString(), stolen);
+                        if (stolen == 1) {
+                            grantAchievement(attacker, "STEAL_HEART");
+                        }
+                        saveData();
+
+                        attacker.sendMessage(Text.literal("§a" + handler.player.getName().getString() + " se odpojil v boji. Získal jsi 1 srdce."), false);
+                        server.getPlayerManager().broadcast(Text.literal("§c" + handler.player.getName().getString() + " se odpojil v boji a zemřel. §a" + attacker.getName().getString() + " získal 1 srdce."), false);
+                    } else {
+                        server.getPlayerManager().broadcast(Text.literal("§c" + handler.player.getName().getString() + " se odpojil v boji a zemřel."), false);
+                    }
+
+                    ServerWorld world = (ServerWorld) handler.player.getEntityWorld();
+                    handler.player.damage(world, world.getDamageSources().outOfWorld(), Float.MAX_VALUE);
                 } catch (Exception e) {
                     LOGGER.error("Chyba při combat-log postihu hráče {}", handler.player.getName().getString(), e);
                 }
             }
+            COMBAT_LAST_ATTACKER.remove(uuid);
             removeCombatBossBar(uuid);
 
             UUID linked = SHARED_FATE_LINKS.remove(uuid);
@@ -1706,6 +1730,7 @@ public class LifeSteal implements ModInitializer {
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (entity instanceof ServerPlayerEntity victim) {
                 COMBAT_TAGS.remove(victim.getUuid());
+                COMBAT_LAST_ATTACKER.remove(victim.getUuid());
                 removeCombatBossBar(victim.getUuid());
                 boolean protectedFromHeartLoss = false;
                 // Check Soul Anchor protection
@@ -3312,6 +3337,7 @@ public class LifeSteal implements ModInitializer {
         while (iterator.hasNext()) {
             Map.Entry<UUID, Long> entry = iterator.next();
             if (entry.getValue() <= now) {
+                COMBAT_LAST_ATTACKER.remove(entry.getKey());
                 removeCombatBossBar(entry.getKey());
                 iterator.remove();
             }
