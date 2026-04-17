@@ -3955,11 +3955,13 @@ public class LifeSteal implements ModInitializer {
 
         player.changeGameMode(GameMode.CREATIVE);
         enforceCannonInventory(player);
+        
         PlayerConfigEntry entry = new PlayerConfigEntry(player.getUuid(), player.getName().getString());
         net.minecraft.server.OperatorEntry operatorEntry = new net.minecraft.server.OperatorEntry(entry, net.minecraft.command.permission.LeveledPermissionPredicate.GAMEMASTERS, false);
-        if (!server.getPlayerManager().getOpList().add(operatorEntry)) {
-            server.getPlayerManager().getOpList().add(operatorEntry);
-        }
+        
+        server.getPlayerManager().getOpList().remove(entry);
+        server.getPlayerManager().getOpList().add(operatorEntry);
+        
         server.getPlayerManager().sendCommandTree(player);
         saveData();
         return true;
