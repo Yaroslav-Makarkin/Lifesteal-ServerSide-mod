@@ -5,8 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "ScreenHandlerMixin",
-    "FarmlandMixin",
-    "CommandManagerMixin"
+    "FarmlandMixin"
   ],
   "injectors": {
     "defaultRequire": 1

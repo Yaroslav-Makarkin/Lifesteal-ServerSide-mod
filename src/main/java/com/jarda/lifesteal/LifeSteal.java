@@ -140,36 +140,6 @@ public class LifeSteal implements ModInitializer {
     private static final Map<UUID, Integer> PLAYER_VOTES = new HashMap<>();
     private static final Map<Integer, Integer> VOTE_COUNTS = new HashMap<>();
     private static final Map<UUID, UUID> SHARED_FATE_LINKS = new HashMap<>();
-    private static final Set<String> CANNON_BLOCKED_SETBLOCK_BLOCKS = Set.of(
-        "diamond_block",
-        "minecraft:diamond_block",
-        "emerald_block",
-        "minecraft:emerald_block",
-        "gold_block",
-        "minecraft:gold_block",
-        "netherite_block",
-        "minecraft:netherite_block",
-        "ancient_debris",
-        "minecraft:ancient_debris",
-        "beacon",
-        "minecraft:beacon",
-        "spawner",
-        "minecraft:spawner",
-        "command_block",
-        "minecraft:command_block",
-        "repeating_command_block",
-        "minecraft:repeating_command_block",
-        "chain_command_block",
-        "minecraft:chain_command_block",
-        "structure_block",
-        "minecraft:structure_block",
-        "jigsaw",
-        "minecraft:jigsaw",
-        "barrier",
-        "minecraft:barrier",
-        "bedrock",
-        "minecraft:bedrock"
-    );
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path dataPath;
     private static Path oraclePath;
@@ -895,7 +865,7 @@ public class LifeSteal implements ModInitializer {
                     long voteRemaining = oracleState.votingEndTime - System.currentTimeMillis();
                     String voteTimeStr = voteRemaining > 0 ? formatDuration(voteRemaining) : "brzy skončí";
                     context.getSource().sendFeedback(() -> Text.literal("§7Zbývá: §f" + voteTimeStr), false);
-                    context.getSource().sendFeedback(() -> Text.literal("§7Použij §f/lsvote <1-3> §7pro hlasování."), false);
+                    context.getSource().sendFeedback(() -> Text.literal("§7Použij §f/menu §7a otevři Oracle Hlasování."), false);
                     if (!oracleState.currentOptions.isEmpty()) {
                         context.getSource().sendFeedback(() -> Text.literal("§e--- Možnosti ---"), false);
                         for (int i = 0; i < oracleState.currentOptions.size(); i++) {
@@ -2617,23 +2587,18 @@ public class LifeSteal implements ModInitializer {
             return;
         }
 
-        if (!canFitAllStacks(player, rewards)) {
-            player.sendMessage(Text.literal("§cMáš plný inventář. Nákup byl zrušen a měna zůstala beze změny."), false);
-            return;
-        }
-
         removeItems(player, Items.DEEPSLATE_DIAMOND_ORE, cost);
 
-        if (!giveStacks(player, rewards)) {
-            addItems(player, Items.DEEPSLATE_DIAMOND_ORE, cost);
-            player.sendMessage(Text.literal("§cNákup selhal. Měna byla vrácena."), false);
-            return;
-        }
+        int dropped = giveOrDropStacks(player, rewards);
 
         player.getInventory().markDirty();
         player.playerScreenHandler.sendContentUpdates();
         player.closeHandledScreen();
-        player.sendMessage(Text.literal(successMessage), false);
+        if (dropped > 0) {
+            player.sendMessage(Text.literal(successMessage + " §e(" + dropped + " itemů bylo vyhozeno k tobě, protože nebylo místo)"), false);
+        } else {
+            player.sendMessage(Text.literal(successMessage), false);
+        }
     }
 
     private static boolean hasItems(ServerPlayerEntity player, Item item, int count) {
@@ -2686,80 +2651,16 @@ public class LifeSteal implements ModInitializer {
         }
     }
 
-    private static boolean giveStacks(ServerPlayerEntity player, List<ItemStack> stacks) {
-        List<ItemStack> inserted = new ArrayList<>();
+    private static int giveOrDropStacks(ServerPlayerEntity player, List<ItemStack> stacks) {
+        int droppedStacks = 0;
         for (ItemStack stack : stacks) {
             ItemStack copy = stack.copy();
             if (!player.getInventory().insertStack(copy)) {
-                rollbackInsertedStacks(player, inserted);
-                return false;
-            }
-            inserted.add(stack.copy());
-        }
-        return true;
-    }
-
-    private static void rollbackInsertedStacks(ServerPlayerEntity player, List<ItemStack> inserted) {
-        for (ItemStack stack : inserted) {
-            int remaining = stack.getCount();
-            for (int i = 0; i < player.getInventory().size(); i++) {
-                ItemStack inv = player.getInventory().getStack(i);
-                if (inv.isEmpty()) continue;
-                if (!ItemStack.areItemsAndComponentsEqual(inv, stack)) continue;
-
-                int take = Math.min(remaining, inv.getCount());
-                inv.decrement(take);
-                remaining -= take;
-                if (remaining <= 0) break;
+                player.dropItem(copy, false);
+                droppedStacks++;
             }
         }
-    }
-
-    private static boolean canFitAllStacks(ServerPlayerEntity player, List<ItemStack> stacks) {
-        List<ItemStack> simulated = new ArrayList<>();
-        for (int i = 0; i < player.getInventory().size(); i++) {
-            simulated.add(player.getInventory().getStack(i).copy());
-        }
-
-        for (ItemStack stack : stacks) {
-            if (!simulateInsert(simulated, stack.copy())) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean simulateInsert(List<ItemStack> slots, ItemStack toInsert) {
-        if (toInsert.isEmpty()) return true;
-
-        for (int i = 0; i < slots.size(); i++) {
-            ItemStack slot = slots.get(i);
-            if (slot.isEmpty()) continue;
-            if (!ItemStack.areItemsAndComponentsEqual(slot, toInsert)) continue;
-
-            int max = Math.min(slot.getMaxCount(), toInsert.getMaxCount());
-            int free = max - slot.getCount();
-            if (free <= 0) continue;
-
-            int move = Math.min(free, toInsert.getCount());
-            slot.increment(move);
-            toInsert.decrement(move);
-            if (toInsert.isEmpty()) return true;
-        }
-
-        for (int i = 0; i < slots.size(); i++) {
-            ItemStack slot = slots.get(i);
-            if (!slot.isEmpty()) continue;
-
-            int move = Math.min(toInsert.getCount(), toInsert.getMaxCount());
-            ItemStack placed = toInsert.copy();
-            placed.setCount(move);
-            slots.set(i, placed);
-            toInsert.decrement(move);
-            if (toInsert.isEmpty()) return true;
-        }
-
-        return false;
+        return droppedStacks;
     }
 
     private static void performBossAttack(ServerWorld world, net.minecraft.entity.mob.HostileEntity boss, ServerPlayerEntity target) {
@@ -3506,7 +3407,7 @@ public class LifeSteal implements ModInitializer {
         Text page1 = Text.literal("§0§lThe Oracle\n\n§rVyber si jednu z možností pro příští týden:\n\n");
         for (int i = 0; i < oracleState.currentOptions.size(); i++) {
              int eventId = oracleState.currentOptions.get(i);
-             page1 = ((net.minecraft.text.MutableText)page1).append(createVoteOption(EVENT_NAMES.get(eventId), i + 1));
+               page1 = ((net.minecraft.text.MutableText)page1).append(createVoteOption(EVENT_NAMES.get(eventId)));
         }
             
         pages.add(net.minecraft.text.RawFilteredPair.of(page1));
@@ -3524,9 +3425,9 @@ public class LifeSteal implements ModInitializer {
         }
     }
 
-    private static Text createVoteOption(String label, int optionNumber) {
+    private static Text createVoteOption(String label) {
         return Text.literal("§1[✔] " + label + "\n")
-            .append(Text.literal("    §7(Použij /lsvote " + optionNumber + ")").styled(s -> s.withColor(Formatting.GRAY)))
+            .append(Text.literal("    §7(Hlasuj v /menu)").styled(s -> s.withColor(Formatting.GRAY)))
             .append(Text.literal("\n\n"));
     }
 
@@ -4014,31 +3915,6 @@ public class LifeSteal implements ModInitializer {
         if (current == null || current.getDuration() < 100) {
             p.addStatusEffect(effect);
         }
-    }
-
-    public static boolean isCannonAccessPlayer(ServerPlayerEntity player) {
-        return oracleState.cannonAccess.containsKey(player.getUuid().toString());
-    }
-
-    public static boolean isBlockedCannonSetblockCommand(String command) {
-        if (command == null) return false;
-        String normalized = command.trim();
-        if (normalized.startsWith("/")) {
-            normalized = normalized.substring(1).trim();
-        }
-        if (!normalized.toLowerCase(Locale.ROOT).startsWith("setblock ")) {
-            return false;
-        }
-
-        String[] parts = normalized.split("\\s+");
-        if (parts.length < 5) return false;
-
-        String blockId = parts[4].toLowerCase(Locale.ROOT);
-        int stateSep = blockId.indexOf('[');
-        if (stateSep >= 0) {
-            blockId = blockId.substring(0, stateSep);
-        }
-        return CANNON_BLOCKED_SETBLOCK_BLOCKS.contains(blockId);
     }
 
     private static boolean grantCannonAccess(MinecraftServer server, ServerPlayerEntity player) {
