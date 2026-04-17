@@ -2925,14 +2925,12 @@ public class LifeSteal implements ModInitializer {
         ItemStack axe = new ItemStack(Items.DIAMOND_AXE);
         addEnchantment(axe, enchs, Enchantments.SHARPNESS, 1);
         addEnchantment(axe, enchs, Enchantments.UNBREAKING, 2);
-        applyKitIndex(axe);
         items.add(axe);
 
         // 2. DIA SWORD (Sharpness 1, Fire Aspect 1)
         ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
         addEnchantment(sword, enchs, Enchantments.SHARPNESS, 1);
         addEnchantment(sword, enchs, Enchantments.FIRE_ASPECT, 1);
-        applyKitIndex(sword);
         items.add(sword);
 
         // 4. Full DIA Armor (Protection 3)
@@ -2940,30 +2938,25 @@ public class LifeSteal implements ModInitializer {
         for (Item armorItem : armorItems) {
             ItemStack armor = new ItemStack(armorItem);
             addEnchantment(armor, enchs, Enchantments.PROTECTION, 3);
-            applyKitIndex(armor);
             items.add(armor);
         }
         
         // 3. 8x Ender Pearl
         ItemStack pearls = new ItemStack(Items.ENDER_PEARL, 8);
-        applyKitIndex(pearls);
         items.add(pearls);
 
         // 5. 1x Totem of Undying
         ItemStack totem = new ItemStack(Items.TOTEM_OF_UNDYING);
-        applyKitIndex(totem);
         items.add(totem);
 
         // 6. 32x Golden Carrot
         ItemStack carrots = new ItemStack(Items.GOLDEN_CARROT, 32);
-        applyKitIndex(carrots);
         items.add(carrots);
 
         // 7. 5x Strength 1
         for (int i = 0; i < 5; i++) {
             ItemStack potion = new ItemStack(Items.POTION);
             potion.set(DataComponentTypes.POTION_CONTENTS, new net.minecraft.component.type.PotionContentsComponent(net.minecraft.potion.Potions.STRENGTH));
-            applyKitIndex(potion);
             items.add(potion);
         }
 
@@ -2971,36 +2964,29 @@ public class LifeSteal implements ModInitializer {
         for (int i = 0; i < 3; i++) {
             ItemStack potion = new ItemStack(Items.POTION);
             potion.set(DataComponentTypes.POTION_CONTENTS, new net.minecraft.component.type.PotionContentsComponent(net.minecraft.potion.Potions.INVISIBILITY));
-            applyKitIndex(potion);
             items.add(potion);
         }
 
         // 9. 8x Golden Apple
         ItemStack gApples = new ItemStack(Items.GOLDEN_APPLE, 8);
-        applyKitIndex(gApples);
         items.add(gApples);
 
         // 10. 16x Cobweb
         ItemStack cobwebs = new ItemStack(Items.COBWEB, 16);
-        applyKitIndex(cobwebs);
         items.add(cobwebs);
 
         // 11. Water Bucket
         ItemStack water = new ItemStack(Items.WATER_BUCKET);
-        applyKitIndex(water);
         items.add(water);
 
         // 12. Lava bucket
         ItemStack lava = new ItemStack(Items.LAVA_BUCKET);
-        applyKitIndex(lava);
         items.add(lava);
 
         // 2 staky Cobblestone
         ItemStack cobble1 = new ItemStack(Items.COBBLESTONE, 64);
-        applyKitIndex(cobble1);
         items.add(cobble1);
         ItemStack cobble2 = new ItemStack(Items.COBBLESTONE, 64);
-        applyKitIndex(cobble2);
         items.add(cobble2);
 
         return items;
