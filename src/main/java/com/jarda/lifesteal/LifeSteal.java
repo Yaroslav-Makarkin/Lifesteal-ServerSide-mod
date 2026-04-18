@@ -142,6 +142,7 @@ public class LifeSteal implements ModInitializer {
     private static final Map<UUID, ServerBossBar> COMBAT_BOSSBARS = new HashMap<>();
     private static final long COMBAT_TAG_DURATION_MS = 120000L;
     private static final Map<UUID, Long> JOIN_TIMES = new HashMap<>();
+    private static long lastMenuRefreshMs = 0L;
     // Admin features
     private static final Set<UUID> FROZEN_PLAYERS = new HashSet<>();
     private static final Map<UUID, Long> MUTED_PLAYERS = new HashMap<>(); // UUID -> mute end time (ms)
@@ -1892,6 +1893,10 @@ public class LifeSteal implements ModInitializer {
                 cleanupBossAttackTimers(server);
             }
 
+            if (isSecond) {
+                refreshDynamicMenus(server);
+            }
+
             // Apply active effects
             if (oracleState.currentActiveEffect > 0) {
                 if (oracleState.effectEndTime == 0 || System.currentTimeMillis() <= oracleState.effectEndTime) {
@@ -2191,6 +2196,24 @@ public class LifeSteal implements ModInitializer {
         });
     }
 
+    private static void refreshDynamicMenus(MinecraftServer server) {
+        long now = System.currentTimeMillis();
+        if (now - lastMenuRefreshMs < 1000L) return;
+        lastMenuRefreshMs = now;
+
+        for (Map.Entry<UUID, String> entry : new ArrayList<>(OPEN_MENUS.entrySet())) {
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
+            if (player == null || player.currentScreenHandler == null) continue;
+
+            String menuType = entry.getValue();
+            if ("main".equals(menuType)) {
+                openMainMenu(player);
+            } else if ("voting".equals(menuType)) {
+                openVotingMenu(player);
+            }
+        }
+    }
+
     private static void validateCustomRecipes(MinecraftServer server) {
         Set<Identifier> loadedIds = server.getRecipeManager().values().stream()
             .map(entry -> entry.id().getValue())
@@ -2257,6 +2280,26 @@ public class LifeSteal implements ModInitializer {
     // ===== MENU SYSTEM =====
     public static void openMainMenu(ServerPlayerEntity player) {
         SimpleInventory inv = new SimpleInventory(27);
+
+        ItemStack oracleStatus = new ItemStack(oracleState.votingActive ? Items.CLOCK : (oracleState.isEventActive ? Items.NETHER_STAR : Items.GRAY_DYE));
+        List<Text> oracleLore = new ArrayList<>();
+        if (oracleState.votingActive) {
+            long voteRemaining = Math.max(0L, oracleState.votingEndTime - System.currentTimeMillis());
+            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("§e§lOracle: Hlasování"));
+            oracleLore.add(Text.literal("§7Stav: §aAktivní"));
+            oracleLore.add(Text.literal("§7Zbývá: §f" + formatDuration(voteRemaining)));
+        } else if (oracleState.isEventActive && oracleState.currentActiveEffect > 0) {
+            String eventName = EVENT_NAMES.getOrDefault(oracleState.currentActiveEffect, "Neznámý");
+            long eventRemaining = Math.max(0L, oracleState.effectEndTime - System.currentTimeMillis());
+            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("§6§lOracle: Event"));
+            oracleLore.add(Text.literal("§7Aktivní: §f" + eventName));
+            oracleLore.add(Text.literal("§7Zbývá: §f" + formatDuration(eventRemaining)));
+        } else {
+            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("§7§lOracle: Neaktivní"));
+            oracleLore.add(Text.literal("§7Aktuálně neběží hlasování ani event."));
+        }
+        oracleStatus.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(oracleLore));
+        inv.setStack(4, oracleStatus);
 
         // Slot 11 - My Stats
         ItemStack statsItem = new ItemStack(Items.BOOK);
@@ -2669,7 +2712,6 @@ public class LifeSteal implements ModInitializer {
 
         player.getInventory().markDirty();
         player.playerScreenHandler.sendContentUpdates();
-        player.closeHandledScreen();
         if (dropped > 0) {
             player.sendMessage(Text.literal(successMessage + " §e(" + dropped + " itemů bylo vyhozeno k tobě, protože nebylo místo)"), false);
         } else {
