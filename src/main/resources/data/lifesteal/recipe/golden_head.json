@@ -16,10 +16,10 @@
       "minecraft:custom_data": {
         "lifesteal:golden_head": true
       },
-      "minecraft:item_name": "{\"text\":\"Golden Head\",\"color\":\"gold\",\"italic\":false}",
+      "minecraft:item_name": {"text":"Golden Head","color":"gold","italic":false},
       "minecraft:lore": [
-        "{\"text\":\"Mocná trofej, která tě posílí.\",\"color\":\"gray\",\"italic\":false}",
-        "{\"text\":\"Dává Regen II, Absorption II a Speed II.\",\"color\":\"dark_gray\",\"italic\":false}"
+        {"text":"Mocná trofej, která tě posílí.","color":"gray","italic":false},
+        {"text":"Dává Regen II, Absorption II a Speed II.","color":"dark_gray","italic":false}
       ],
       "minecraft:enchantment_glint_override": true
     }

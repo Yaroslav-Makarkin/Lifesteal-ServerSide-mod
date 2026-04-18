@@ -15,10 +15,10 @@
     "count": 1,
     "components": {
       "minecraft:custom_data": { "lifesteal:soul_anchor": true },
-      "minecraft:item_name": "{\"text\":\"Revival Heart\",\"color\":\"aqua\",\"bold\":true}",
+      "minecraft:item_name": {"text":"Revival Heart","color":"aqua","bold":true},
       "minecraft:lore": [
-        "{\"text\":\"Po smrti spotřebuje 1 kus a zruší ztrátu srdce.\",\"color\":\"gray\",\"italic\":false}",
-        "{\"text\":\"Nedává vanilla Totem nesmrtelnost.\",\"color\":\"dark_gray\",\"italic\":false}"
+        {"text":"Po smrti spotřebuje 1 kus a zruší ztrátu srdce.","color":"gray","italic":false},
+        {"text":"Nedává vanilla Totem nesmrtelnost.","color":"dark_gray","italic":false}
       ],
       "minecraft:enchantment_glint_override": true
     }

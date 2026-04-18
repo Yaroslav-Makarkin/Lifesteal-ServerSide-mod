@@ -14,9 +14,9 @@
     "count": 1,
     "components": {
       "minecraft:custom_data": { "lifesteal:echoing_horn": true },
-      "minecraft:item_name": "{\"text\":\"Echoing Horn\",\"color\":\"blue\",\"bold\":true}",
+      "minecraft:item_name": {"text":"Echoing Horn","color":"blue","bold":true},
       "minecraft:lore": [
-        "{\"text\":\"Odhalí blízké hráče efektem Glowing.\",\"color\":\"gray\",\"italic\":false}"
+        {"text":"Odhalí blízké hráče efektem Glowing.","color":"gray","italic":false}
       ],
       "minecraft:enchantment_glint_override": true
     }

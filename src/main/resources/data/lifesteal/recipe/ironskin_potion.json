@@ -15,9 +15,9 @@
     "count": 1,
     "components": {
       "minecraft:custom_data": { "lifesteal:ironskin": true },
-      "minecraft:item_name": "{\"text\":\"Iron Skin Potion\",\"color\":\"gray\",\"bold\":true}",
+      "minecraft:item_name": {"text":"Iron Skin Potion","color":"gray","bold":true},
       "minecraft:lore": [
-        "{\"text\":\"Dává Resistance II a silný Absorption buff.\",\"color\":\"gray\",\"italic\":false}"
+        {"text":"Dává Resistance II a silný Absorption buff.","color":"gray","italic":false}
       ],
       "minecraft:enchantment_glint_override": true
     }
