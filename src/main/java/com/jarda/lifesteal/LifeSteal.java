@@ -23,6 +23,7 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.Blocks;
@@ -358,6 +359,17 @@ public class LifeSteal implements ModInitializer {
             if (source.getAttacker() instanceof ServerPlayerEntity attacker && !LOGGED_IN.contains(attacker.getUuid())) {
                 return false;
             }
+
+            // Spawn safezone: disable PvP when either player is inside spawn protection radius.
+            if (entity instanceof ServerPlayerEntity victim && source.getAttacker() instanceof ServerPlayerEntity attacker) {
+                boolean victimInSpawn = isInSpawnProtection(victim.getEntityWorld(), victim.getBlockPos());
+                boolean attackerInSpawn = isInSpawnProtection(attacker.getEntityWorld(), attacker.getBlockPos());
+                if (victimInSpawn || attackerInSpawn) {
+                    attacker.sendMessage(Text.literal("§cNa spawnu je PvP vypnuté."), true);
+                    return false;
+                }
+            }
+
             // Combat Tag
             if (entity instanceof ServerPlayerEntity victim && source.getAttacker() instanceof ServerPlayerEntity killer) {
                 long now = System.currentTimeMillis();
@@ -1577,6 +1589,23 @@ public class LifeSteal implements ModInitializer {
                 }
             }
             return ActionResult.PASS;
+        });
+
+        // Spawn safezone: prevent hostile mobs from existing inside spawn protection radius.
+        ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
+            if (!(world instanceof ServerWorld)) return;
+            if (!(entity instanceof HostileEntity hostile)) return;
+            if (!isInSpawnProtection(world, hostile.getBlockPos())) return;
+
+            // Keep custom world bosses intact if they are intentionally spawned.
+            if (hostile.getCustomName() != null) {
+                String name = hostile.getCustomName().getString();
+                if (ELYTRA_BOSS_NAME.equals(name) || BOSS_STRAY_NAME.equals(name) || BOSS_WITHER_NAME.equals(name)) {
+                    return;
+                }
+            }
+
+            hostile.discard();
         });
 
         // Přihlášení/odhlášení události
@@ -3347,6 +3376,16 @@ public class LifeSteal implements ModInitializer {
         if (!oracleState.spawnSet) return false;
         if (!player.getEntityWorld().getRegistryKey().getValue().toString().equals(oracleState.spawnDimension)) return false;
         
+        double dx = pos.getX() - oracleState.spawnX;
+        double dz = pos.getZ() - oracleState.spawnZ;
+        double distanceSq = dx * dx + dz * dz;
+        return distanceSq <= (oracleState.spawnProtectionRadius * oracleState.spawnProtectionRadius);
+    }
+
+    private static boolean isInSpawnProtection(World world, BlockPos pos) {
+        if (!oracleState.spawnSet) return false;
+        if (!world.getRegistryKey().getValue().toString().equals(oracleState.spawnDimension)) return false;
+
         double dx = pos.getX() - oracleState.spawnX;
         double dz = pos.getZ() - oracleState.spawnZ;
         double distanceSq = dx * dx + dz * dz;
