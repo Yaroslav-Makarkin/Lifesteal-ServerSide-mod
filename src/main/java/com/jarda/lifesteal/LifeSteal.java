@@ -140,6 +140,7 @@ public class LifeSteal implements ModInitializer {
     private static final Map<UUID, Long> COMBAT_TAGS = new HashMap<>();
     private static final Map<UUID, UUID> COMBAT_LAST_ATTACKER = new HashMap<>();
     private static final Map<UUID, ServerBossBar> COMBAT_BOSSBARS = new HashMap<>();
+    private static final Set<UUID> HEART_LOSS_PROTECTED_ON_DEATH = new HashSet<>();
     private static final long COMBAT_TAG_DURATION_MS = 120000L;
     private static final Map<UUID, Long> JOIN_TIMES = new HashMap<>();
     private static long lastMenuRefreshMs = 0L;
@@ -363,6 +364,20 @@ public class LifeSteal implements ModInitializer {
                 applyCombatTag(victim, now);
                 applyCombatTag(killer, now);
                 COMBAT_LAST_ATTACKER.put(victim.getUuid(), killer.getUuid());
+            }
+
+            // Reserve Revival Heart protection on lethal hit while inventory is still intact.
+            if (entity instanceof ServerPlayerEntity victim && victim.getHealth() - amount <= 0.0f) {
+                for (int i = 0; i < victim.getInventory().size(); i++) {
+                    ItemStack stack = victim.getInventory().getStack(i);
+                    NbtComponent nbt = stack.get(DataComponentTypes.CUSTOM_DATA);
+                    if (nbt != null && nbt.copyNbt().contains("lifesteal:soul_anchor")) {
+                        stack.decrement(1);
+                        HEART_LOSS_PROTECTED_ON_DEATH.add(victim.getUuid());
+                        victim.sendMessage(Text.literal("Revival Heart tě ochránilo před ztrátou srdce.").formatted(Formatting.AQUA), false);
+                        break;
+                    }
+                }
             }
             
             // Oracle Logic: Vampire Weekend (32)
@@ -1745,22 +1760,18 @@ public class LifeSteal implements ModInitializer {
                 COMBAT_TAGS.remove(victim.getUuid());
                 COMBAT_LAST_ATTACKER.remove(victim.getUuid());
                 removeCombatBossBar(victim.getUuid());
-                boolean protectedFromHeartLoss = false;
+                boolean protectedFromHeartLoss = HEART_LOSS_PROTECTED_ON_DEATH.remove(victim.getUuid());
                 // Check Soul Anchor protection
-                for (int i = 0; i < victim.getInventory().size(); i++) {
-                    ItemStack stack = victim.getInventory().getStack(i);
-                    NbtComponent nbt = stack.get(DataComponentTypes.CUSTOM_DATA);
-                    if (nbt != null && nbt.copyNbt().contains("lifesteal:soul_anchor")) {
-                        stack.decrement(1);
-                        protectedFromHeartLoss = true;
-                        victim.sendMessage(Text.literal("Revival Heart tě ochránilo před ztrátou srdce.").formatted(Formatting.AQUA), false);
-                        break;
-                    }
-                    if (stack.isOf(Items.TOTEM_OF_UNDYING)) {
-                        stack.decrement(1);
-                        protectedFromHeartLoss = true;
-                        victim.sendMessage(Text.literal("Totem tě ochránil před ztrátou srdce.").formatted(Formatting.GOLD), false);
-                        break;
+                if (!protectedFromHeartLoss) {
+                    for (int i = 0; i < victim.getInventory().size(); i++) {
+                        ItemStack stack = victim.getInventory().getStack(i);
+                        NbtComponent nbt = stack.get(DataComponentTypes.CUSTOM_DATA);
+                        if (nbt != null && nbt.copyNbt().contains("lifesteal:soul_anchor")) {
+                            stack.decrement(1);
+                            protectedFromHeartLoss = true;
+                            victim.sendMessage(Text.literal("Revival Heart tě ochránilo před ztrátou srdce.").formatted(Formatting.AQUA), false);
+                            break;
+                        }
                     }
                 }
 
