@@ -11,11 +11,16 @@
     "T": "minecraft:totem_of_undying"
   },
   "result": {
-    "id": "minecraft:totem_of_undying",
+    "id": "minecraft:heart_of_the_sea",
     "count": 1,
     "components": {
       "minecraft:custom_data": { "lifesteal:soul_anchor": true },
-      "minecraft:item_name": "{\"text\":\"Revival Heart\",\"color\":\"aqua\",\"bold\":true}"
+      "minecraft:item_name": "{\"text\":\"Revival Heart\",\"color\":\"aqua\",\"bold\":true}",
+      "minecraft:lore": [
+        "{\"text\":\"Po smrti spotřebuje 1 kus a zruší ztrátu srdce.\",\"color\":\"gray\",\"italic\":false}",
+        "{\"text\":\"Nedává vanilla Totem nesmrtelnost.\",\"color\":\"dark_gray\",\"italic\":false}"
+      ],
+      "minecraft:enchantment_glint_override": true
     }
   }
 }

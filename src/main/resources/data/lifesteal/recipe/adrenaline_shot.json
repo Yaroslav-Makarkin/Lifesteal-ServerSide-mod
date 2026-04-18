@@ -15,7 +15,10 @@
     "count": 1,
     "components": {
       "minecraft:custom_data": { "lifesteal:adrenaline": true },
-      "minecraft:item_name": "{\"text\":\"Adrenaline Shot\",\"color\":\"red\",\"bold\":true}"
+      "minecraft:item_name": "{\"text\":\"Adrenaline Shot\",\"color\":\"red\",\"bold\":true}",
+      "minecraft:lore": [
+        "{\"text\":\"Dává Speed III a Strength II na krátkou dobu.\",\"color\":\"gray\",\"italic\":false}"
+      ]
     }
   }
 }

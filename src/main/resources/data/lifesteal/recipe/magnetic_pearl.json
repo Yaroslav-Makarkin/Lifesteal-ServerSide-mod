@@ -14,7 +14,10 @@
     "count": 1,
     "components": {
       "minecraft:custom_data": { "lifesteal:magnetic_pearl": true },
-      "minecraft:item_name": "{\"text\":\"Magnetic Pearl\",\"color\":\"dark_purple\",\"bold\":true}"
+      "minecraft:item_name": "{\"text\":\"Magnetic Pearl\",\"color\":\"dark_purple\",\"bold\":true}",
+      "minecraft:lore": [
+        "{\"text\":\"Přitáhne itemy v okolí k hráči.\",\"color\":\"gray\",\"italic\":false}"
+      ]
     }
   }
 }

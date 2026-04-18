@@ -1749,14 +1749,12 @@ public class LifeSteal implements ModInitializer {
                 // Check Soul Anchor protection
                 for (int i = 0; i < victim.getInventory().size(); i++) {
                     ItemStack stack = victim.getInventory().getStack(i);
-                    if (stack.isOf(Items.TOTEM_OF_UNDYING)) {
-                        NbtComponent nbt = stack.get(DataComponentTypes.CUSTOM_DATA);
-                        if (nbt != null && nbt.copyNbt().contains("lifesteal:soul_anchor")) {
-                            stack.decrement(1);
-                            protectedFromHeartLoss = true;
-                            victim.sendMessage(Text.literal("§b§lRevival Heart tě ochránilo před ztrátou srdce!"), false);
-                            break;
-                        }
+                    NbtComponent nbt = stack.get(DataComponentTypes.CUSTOM_DATA);
+                    if (nbt != null && nbt.copyNbt().contains("lifesteal:soul_anchor")) {
+                        stack.decrement(1);
+                        protectedFromHeartLoss = true;
+                        victim.sendMessage(Text.literal("Revival Heart tě ochránilo před ztrátou srdce.").formatted(Formatting.AQUA), false);
+                        break;
                     }
                 }
 
@@ -2242,7 +2240,7 @@ public class LifeSteal implements ModInitializer {
 
     public static void openShop(ServerPlayerEntity player) {
         SimpleInventory inventory = new SimpleInventory(27);
-        
+
         ItemStack kitItem = new ItemStack(Items.CHEST);
         kitItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§6Kit"));
         List<Text> lore = new ArrayList<>();
@@ -2252,7 +2250,6 @@ public class LifeSteal implements ModInitializer {
         lore.add(Text.literal("§8- Potiony, Cobweb, Buckety"));
         lore.add(Text.literal("§eCena: 16x Deepslate Diamond Ore"));
         kitItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
-        
         inventory.setStack(10, kitItem);
 
         ItemStack dirtItem = new ItemStack(Items.DIRT, 64);
@@ -2269,11 +2266,10 @@ public class LifeSteal implements ModInitializer {
         cobbleItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(cobbleLore));
         inventory.setStack(14, cobbleItem);
 
-        player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) -> {
-            return net.minecraft.screen.GenericContainerScreenHandler.createGeneric9x3(syncId, playerInventory, inventory);
-        }, Text.literal("Obchod")));
+        player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) ->
+            net.minecraft.screen.GenericContainerScreenHandler.createGeneric9x3(syncId, playerInventory, inventory),
+            Text.literal("Obchod")));
 
-        // MUST be after openHandledScreen — otherwise onClosed of the previous screen removes it
         OPEN_SHOPS.put(player.getUuid(), inventory);
     }
 
@@ -2398,7 +2394,7 @@ public class LifeSteal implements ModInitializer {
 
         // Heart
         ItemStack heartItem = new ItemStack(Items.NETHER_STAR);
-        heartItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§c§lHeart"));
+        heartItem.set(DataComponentTypes.ITEM_NAME, Text.literal("Heart").formatted(Formatting.RED, Formatting.BOLD));
         heartItem.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> heartLore = new ArrayList<>();
         heartLore.add(Text.literal("§7Přidá +1 srdce k maximálnímu zdraví."));
@@ -2416,7 +2412,7 @@ public class LifeSteal implements ModInitializer {
 
         // Golden Head
         ItemStack goldenHead = new ItemStack(Items.PLAYER_HEAD);
-        goldenHead.set(DataComponentTypes.ITEM_NAME, Text.literal("§6§lGolden Head"));
+        goldenHead.set(DataComponentTypes.ITEM_NAME, Text.literal("Golden Head").formatted(Formatting.GOLD, Formatting.BOLD));
         goldenHead.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> ghLore = new ArrayList<>();
         ghLore.add(Text.literal("§7Regen II, Absorption II, Speed II."));
@@ -2432,11 +2428,12 @@ public class LifeSteal implements ModInitializer {
         inv.setStack(12, goldenHead);
 
         // Revival Heart
-        ItemStack revival = new ItemStack(Items.TOTEM_OF_UNDYING);
-        revival.set(DataComponentTypes.ITEM_NAME, Text.literal("§b§lRevival Heart"));
+        ItemStack revival = new ItemStack(Items.HEART_OF_THE_SEA);
+        revival.set(DataComponentTypes.ITEM_NAME, Text.literal("Revival Heart").formatted(Formatting.AQUA, Formatting.BOLD));
         revival.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> revLore = new ArrayList<>();
-        revLore.add(Text.literal("§7Speciální totem."));
+        revLore.add(Text.literal("§7Chrání jen před ztrátou srdce po smrti."));
+        revLore.add(Text.literal("§7Nedává vanilla Totem nesmrtelnost."));
         revLore.add(Text.literal(""));
         revLore.add(Text.literal("§eRecept (Crafting Table):"));
         revLore.add(Text.literal("§f N I N"));
@@ -2451,7 +2448,7 @@ public class LifeSteal implements ModInitializer {
 
         // Adrenaline Shot
         ItemStack adrenaline = new ItemStack(Items.POTION);
-        adrenaline.set(DataComponentTypes.ITEM_NAME, Text.literal("§c§lAdrenaline Shot"));
+        adrenaline.set(DataComponentTypes.ITEM_NAME, Text.literal("Adrenaline Shot").formatted(Formatting.RED, Formatting.BOLD));
         adrenaline.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> adrLore = new ArrayList<>();
         adrLore.add(Text.literal("§7Silný bojový lektvar."));
@@ -2469,7 +2466,7 @@ public class LifeSteal implements ModInitializer {
 
         // Iron Skin Potion
         ItemStack ironskin = new ItemStack(Items.POTION);
-        ironskin.set(DataComponentTypes.ITEM_NAME, Text.literal("§7§lIron Skin Potion"));
+        ironskin.set(DataComponentTypes.ITEM_NAME, Text.literal("Iron Skin Potion").formatted(Formatting.GRAY, Formatting.BOLD));
         ironskin.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> isLore = new ArrayList<>();
         isLore.add(Text.literal("§7Lektvar odolnosti."));
@@ -2487,7 +2484,7 @@ public class LifeSteal implements ModInitializer {
 
         // Magnetic Pearl
         ItemStack magPearl = new ItemStack(Items.ENDER_PEARL);
-        magPearl.set(DataComponentTypes.ITEM_NAME, Text.literal("§5§lMagnetic Pearl"));
+        magPearl.set(DataComponentTypes.ITEM_NAME, Text.literal("Magnetic Pearl").formatted(Formatting.DARK_PURPLE, Formatting.BOLD));
         magPearl.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> mpLore = new ArrayList<>();
         mpLore.add(Text.literal("§7Magnetická ender perla."));
@@ -2504,7 +2501,7 @@ public class LifeSteal implements ModInitializer {
 
         // Echoing Horn
         ItemStack echoHorn = new ItemStack(Items.GOAT_HORN);
-        echoHorn.set(DataComponentTypes.ITEM_NAME, Text.literal("§9§lEchoing Horn"));
+        echoHorn.set(DataComponentTypes.ITEM_NAME, Text.literal("Echoing Horn").formatted(Formatting.BLUE, Formatting.BOLD));
         echoHorn.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> ehLore = new ArrayList<>();
         ehLore.add(Text.literal("§7Zvukový roh."));
@@ -3191,11 +3188,11 @@ public class LifeSteal implements ModInitializer {
         switch (id) {
             case "STEAL_HEART" -> giveRewardItem(player, new ItemStack(Items.GOLDEN_APPLE));
             case "REACH_20_HEARTS" -> {
-                ItemStack soulAnchor = new ItemStack(Items.TOTEM_OF_UNDYING);
+                ItemStack soulAnchor = new ItemStack(Items.HEART_OF_THE_SEA);
                 NbtCompound nbt = new NbtCompound();
                 nbt.putBoolean("lifesteal:soul_anchor", true);
                 soulAnchor.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
-                soulAnchor.set(DataComponentTypes.ITEM_NAME, Text.literal("§b§lRevival Heart").formatted(Formatting.AQUA));
+                soulAnchor.set(DataComponentTypes.ITEM_NAME, Text.literal("Revival Heart").formatted(Formatting.AQUA, Formatting.BOLD));
                 giveRewardItem(player, soulAnchor);
             }
             case "KILL_BOSS_SOLO" -> {
@@ -3203,7 +3200,7 @@ public class LifeSteal implements ModInitializer {
                 NbtCompound nbt = new NbtCompound();
                 nbt.putBoolean("lifesteal:heart", true);
                 heart.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
-                heart.set(DataComponentTypes.ITEM_NAME, Text.literal("§cHeart").formatted(Formatting.RED));
+                heart.set(DataComponentTypes.ITEM_NAME, Text.literal("Heart").formatted(Formatting.RED, Formatting.BOLD));
                 giveRewardItem(player, heart);
             }
             case "SURVIVE_1_HEART" -> {
@@ -3211,7 +3208,7 @@ public class LifeSteal implements ModInitializer {
                 NbtCompound nbt = new NbtCompound();
                 nbt.putBoolean("lifesteal:golden_head", true);
                 head.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
-                head.set(DataComponentTypes.ITEM_NAME, Text.literal("§6Golden Head").formatted(Formatting.GOLD));
+                head.set(DataComponentTypes.ITEM_NAME, Text.literal("Golden Head").formatted(Formatting.GOLD, Formatting.BOLD));
                 giveRewardItem(player, head);
             }
             case "COMPLETE_10_BOUNTIES" -> giveRewardItem(player, new ItemStack(Items.NETHERITE_INGOT, 5));
