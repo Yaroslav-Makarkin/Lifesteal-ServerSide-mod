@@ -20,11 +20,6 @@
         {"text":"Po smrti spotřebuje 1 kus a zruší ztrátu srdce.","color":"gray","italic":false},
         {"text":"Nedává vanilla Totem nesmrtelnost.","color":"dark_gray","italic":false}
       ],
-      "minecraft:enchantments": {
-        "levels": {
-          "minecraft:vanishing_curse": 1
-        }
-      },
       "minecraft:enchantment_glint_override": true
     }
   }
