@@ -2242,27 +2242,27 @@ public class LifeSteal implements ModInitializer {
         SimpleInventory inventory = new SimpleInventory(27);
 
         ItemStack kitItem = new ItemStack(Items.CHEST);
-        kitItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§6Kit"));
+        kitItem.set(DataComponentTypes.ITEM_NAME, Text.literal("Kit").formatted(Formatting.GOLD, Formatting.BOLD));
         List<Text> lore = new ArrayList<>();
-        lore.add(Text.literal("§7Obsahuje užitečné věci:"));
-        lore.add(Text.literal("§8- Dia vybavení (Sharp 1, Prot 3)"));
-        lore.add(Text.literal("§8- Ender perly, Totem, Jídlo"));
-        lore.add(Text.literal("§8- Potiony, Cobweb, Buckety"));
-        lore.add(Text.literal("§eCena: 16x Deepslate Diamond Ore"));
+        lore.add(Text.literal("Obsahuje užitečné věci:").formatted(Formatting.GRAY));
+        lore.add(Text.literal("- Dia vybavení (Sharp 1, Prot 3)").formatted(Formatting.DARK_GRAY));
+        lore.add(Text.literal("- Ender perly, Totem, Jídlo").formatted(Formatting.DARK_GRAY));
+        lore.add(Text.literal("- Potiony, Cobweb, Buckety").formatted(Formatting.DARK_GRAY));
+        lore.add(Text.literal("Cena: 16x Deepslate Diamond Ore").formatted(Formatting.YELLOW));
         kitItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
         inventory.setStack(10, kitItem);
 
         ItemStack dirtItem = new ItemStack(Items.DIRT, 64);
-        dirtItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§6Dirt (64x)"));
+        dirtItem.set(DataComponentTypes.ITEM_NAME, Text.literal("Dirt (64x)").formatted(Formatting.GOLD));
         List<Text> dirtLore = new ArrayList<>();
-        dirtLore.add(Text.literal("§eCena: 1x Deepslate Diamond Ore"));
+        dirtLore.add(Text.literal("Cena: 1x Deepslate Diamond Ore").formatted(Formatting.YELLOW));
         dirtItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(dirtLore));
         inventory.setStack(12, dirtItem);
 
         ItemStack cobbleItem = new ItemStack(Items.COBBLESTONE, 64);
-        cobbleItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§6Cobblestone (64x)"));
+        cobbleItem.set(DataComponentTypes.ITEM_NAME, Text.literal("Cobblestone (64x)").formatted(Formatting.GOLD));
         List<Text> cobbleLore = new ArrayList<>();
-        cobbleLore.add(Text.literal("§eCena: 1x Deepslate Diamond Ore"));
+        cobbleLore.add(Text.literal("Cena: 1x Deepslate Diamond Ore").formatted(Formatting.YELLOW));
         cobbleItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(cobbleLore));
         inventory.setStack(14, cobbleItem);
 
@@ -2281,57 +2281,57 @@ public class LifeSteal implements ModInitializer {
         List<Text> oracleLore = new ArrayList<>();
         if (oracleState.votingActive) {
             long voteRemaining = Math.max(0L, oracleState.votingEndTime - System.currentTimeMillis());
-            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("§e§lOracle: Hlasování"));
-            oracleLore.add(Text.literal("§7Stav: §aAktivní"));
-            oracleLore.add(Text.literal("§7Zbývá: §f" + formatDuration(voteRemaining)));
+            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("Oracle: Hlasování").formatted(Formatting.YELLOW, Formatting.BOLD));
+            oracleLore.add(Text.literal("Stav: Aktivní").formatted(Formatting.GRAY));
+            oracleLore.add(Text.literal("Zbývá: " + formatDuration(voteRemaining)).formatted(Formatting.GRAY));
         } else if (oracleState.isEventActive && oracleState.currentActiveEffect > 0) {
             String eventName = EVENT_NAMES.getOrDefault(oracleState.currentActiveEffect, "Neznámý");
             long eventRemaining = Math.max(0L, oracleState.effectEndTime - System.currentTimeMillis());
-            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("§6§lOracle: Event"));
-            oracleLore.add(Text.literal("§7Aktivní: §f" + eventName));
-            oracleLore.add(Text.literal("§7Zbývá: §f" + formatDuration(eventRemaining)));
+            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("Oracle: Event").formatted(Formatting.GOLD, Formatting.BOLD));
+            oracleLore.add(Text.literal("Aktivní: " + eventName).formatted(Formatting.GRAY));
+            oracleLore.add(Text.literal("Zbývá: " + formatDuration(eventRemaining)).formatted(Formatting.GRAY));
         } else {
-            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("§7§lOracle: Neaktivní"));
-            oracleLore.add(Text.literal("§7Aktuálně neběží hlasování ani event."));
+            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("Oracle: Neaktivní").formatted(Formatting.GRAY, Formatting.BOLD));
+            oracleLore.add(Text.literal("Aktuálně neběží hlasování ani event.").formatted(Formatting.GRAY));
         }
         oracleStatus.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(oracleLore));
         inv.setStack(4, oracleStatus);
 
         // Slot 11 - My Stats
         ItemStack statsItem = new ItemStack(Items.BOOK);
-        statsItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§b§lMoje Statistiky"));
+        statsItem.set(DataComponentTypes.ITEM_NAME, Text.literal("Moje Statistiky").formatted(Formatting.AQUA, Formatting.BOLD));
         List<Text> statsLore = new ArrayList<>();
-        statsLore.add(Text.literal("§7Klikni pro zobrazení tvých statistik."));
+        statsLore.add(Text.literal("Klikni pro zobrazení tvých statistik.").formatted(Formatting.GRAY));
         statsItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(statsLore));
         inv.setStack(11, statsItem);
 
         // Slot 13 - Crafts
         ItemStack craftsItem = new ItemStack(Items.CRAFTING_TABLE);
-        craftsItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§e§lCrafty"));
+        craftsItem.set(DataComponentTypes.ITEM_NAME, Text.literal("Crafty").formatted(Formatting.YELLOW, Formatting.BOLD));
         List<Text> craftsLore = new ArrayList<>();
-        craftsLore.add(Text.literal("§7Klikni pro zobrazení speciálních craftů."));
+        craftsLore.add(Text.literal("Klikni pro zobrazení speciálních craftů.").formatted(Formatting.GRAY));
         craftsItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(craftsLore));
         inv.setStack(13, craftsItem);
 
         // Slot 15 - Achievements
         ItemStack achItem = new ItemStack(Items.GOLDEN_APPLE);
-        achItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§6§lÚspěchy"));
+        achItem.set(DataComponentTypes.ITEM_NAME, Text.literal("Úspěchy").formatted(Formatting.GOLD, Formatting.BOLD));
         List<Text> achLore = new ArrayList<>();
-        achLore.add(Text.literal("§7Klikni pro zobrazení tvých úspěchů."));
+        achLore.add(Text.literal("Klikni pro zobrazení tvých úspěchů.").formatted(Formatting.GRAY));
         achItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(achLore));
         inv.setStack(15, achItem);
 
         // Slot 17 - Voting
         ItemStack voteItem = new ItemStack(Items.WRITABLE_BOOK);
-        voteItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§d§lHlasování Oracle"));
+        voteItem.set(DataComponentTypes.ITEM_NAME, Text.literal("Hlasování Oracle").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
         List<Text> voteLore = new ArrayList<>();
-        voteLore.add(Text.literal("§7Klikni pro zobrazení hlasování."));
+        voteLore.add(Text.literal("Klikni pro zobrazení hlasování.").formatted(Formatting.GRAY));
         voteItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(voteLore));
         inv.setStack(17, voteItem);
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) ->
             net.minecraft.screen.GenericContainerScreenHandler.createGeneric9x3(syncId, playerInventory, inv),
-            Text.literal("§8Menu")));
+            Text.literal("Menu").formatted(Formatting.DARK_GRAY)));
         OPEN_MENUS.put(player.getUuid(), "main");
     }
 
@@ -2350,42 +2350,42 @@ public class LifeSteal implements ModInitializer {
 
         // Slot 10 - Hearts
         ItemStack heartItem = new ItemStack(Items.RED_DYE, Math.max(1, hearts));
-        heartItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§c❤ Srdíčka: " + hearts));
+        heartItem.set(DataComponentTypes.ITEM_NAME, Text.literal("❤ Srdíčka: " + hearts).formatted(Formatting.RED));
         List<Text> heartLore = new ArrayList<>();
-        heartLore.add(Text.literal("§7Tvé aktuální maximální zdraví."));
-        heartLore.add(Text.literal("§7Max povoleno: §f25 srdíček"));
+        heartLore.add(Text.literal("Tvé aktuální maximální zdraví.").formatted(Formatting.GRAY));
+        heartLore.add(Text.literal("Max povoleno: 25 srdíček").formatted(Formatting.GRAY));
         heartItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(heartLore));
         inv.setStack(10, heartItem);
 
         // Slot 12 - K/D
         ItemStack kdItem = new ItemStack(Items.DIAMOND_SWORD);
-        kdItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§e⚔ K/D Ratio: " + kdStr));
+        kdItem.set(DataComponentTypes.ITEM_NAME, Text.literal("⚔ K/D Ratio: " + kdStr).formatted(Formatting.YELLOW));
         List<Text> kdLore = new ArrayList<>();
-        kdLore.add(Text.literal("§7Zabití: §f" + kills));
-        kdLore.add(Text.literal("§7Úmrtí: §f" + deaths));
+        kdLore.add(Text.literal("Zabití: " + kills).formatted(Formatting.GRAY));
+        kdLore.add(Text.literal("Úmrtí: " + deaths).formatted(Formatting.GRAY));
         kdItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(kdLore));
         inv.setStack(12, kdItem);
 
         // Slot 14 - Achievements progress
         Set<String> playerAch = oracleState.playerAchievements.getOrDefault(player.getUuid().toString(), new HashSet<>());
         ItemStack achItem = new ItemStack(Items.EMERALD, Math.max(1, playerAch.size()));
-        achItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§a✦ Úspěchy: " + playerAch.size() + "/" + ACHIEVEMENTS.size()));
+        achItem.set(DataComponentTypes.ITEM_NAME, Text.literal("✦ Úspěchy: " + playerAch.size() + "/" + ACHIEVEMENTS.size()).formatted(Formatting.GREEN));
         inv.setStack(14, achItem);
 
         // Slot 16 - Bounties
         int bounties = oracleState.totalBountiesCompleted.getOrDefault(player.getUuid().toString(), 0);
         ItemStack bountyItem = new ItemStack(Items.SKELETON_SKULL, Math.max(1, bounties));
-        bountyItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§d☠ Bounty dokončeno: " + bounties));
+        bountyItem.set(DataComponentTypes.ITEM_NAME, Text.literal("☠ Bounty dokončeno: " + bounties).formatted(Formatting.LIGHT_PURPLE));
         inv.setStack(16, bountyItem);
 
         // Slot 22 - Back
         ItemStack backItem = new ItemStack(Items.ARROW);
-        backItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§7← Zpět do Menu"));
+        backItem.set(DataComponentTypes.ITEM_NAME, Text.literal("← Zpět do Menu").formatted(Formatting.GRAY));
         inv.setStack(22, backItem);
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) ->
             net.minecraft.screen.GenericContainerScreenHandler.createGeneric9x3(syncId, playerInventory, inv),
-            Text.literal("§8Moje Statistiky")));
+            Text.literal("Moje Statistiky").formatted(Formatting.DARK_GRAY)));
         OPEN_MENUS.put(player.getUuid(), "stats");
     }
 
@@ -2397,9 +2397,9 @@ public class LifeSteal implements ModInitializer {
         heartItem.set(DataComponentTypes.ITEM_NAME, Text.literal("Heart").formatted(Formatting.RED, Formatting.BOLD));
         heartItem.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> heartLore = new ArrayList<>();
-        heartLore.add(Text.literal("§7Přidá +1 srdce k maximálnímu zdraví."));
+        heartLore.add(Text.literal("Přidá +1 srdce k maximálnímu zdraví.").formatted(Formatting.GRAY));
         heartLore.add(Text.literal(""));
-        heartLore.add(Text.literal("§eRecept (Crafting Table):"));
+        heartLore.add(Text.literal("Recept (Crafting Table):").formatted(Formatting.YELLOW));
         heartLore.add(Text.literal("§f N T N"));
         heartLore.add(Text.literal("§f T B T"));
         heartLore.add(Text.literal("§f N T N"));
@@ -2415,9 +2415,9 @@ public class LifeSteal implements ModInitializer {
         goldenHead.set(DataComponentTypes.ITEM_NAME, Text.literal("Golden Head").formatted(Formatting.GOLD, Formatting.BOLD));
         goldenHead.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> ghLore = new ArrayList<>();
-        ghLore.add(Text.literal("§7Regen II, Absorption II, Speed II."));
+        ghLore.add(Text.literal("Regen II, Absorption II, Speed II.").formatted(Formatting.GRAY));
         ghLore.add(Text.literal(""));
-        ghLore.add(Text.literal("§eRecept (Crafting Table):"));
+        ghLore.add(Text.literal("Recept (Crafting Table):").formatted(Formatting.YELLOW));
         ghLore.add(Text.literal("§f G G G"));
         ghLore.add(Text.literal("§f G P G"));
         ghLore.add(Text.literal("§f G G G"));
@@ -2432,10 +2432,10 @@ public class LifeSteal implements ModInitializer {
         revival.set(DataComponentTypes.ITEM_NAME, Text.literal("Revival Heart").formatted(Formatting.AQUA, Formatting.BOLD));
         revival.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> revLore = new ArrayList<>();
-        revLore.add(Text.literal("§7Chrání jen před ztrátou srdce po smrti."));
-        revLore.add(Text.literal("§7Nedává vanilla Totem nesmrtelnost."));
+        revLore.add(Text.literal("Chrání jen před ztrátou srdce po smrti.").formatted(Formatting.GRAY));
+        revLore.add(Text.literal("Nedává vanilla Totem nesmrtelnost.").formatted(Formatting.GRAY));
         revLore.add(Text.literal(""));
-        revLore.add(Text.literal("§eRecept (Crafting Table):"));
+        revLore.add(Text.literal("Recept (Crafting Table):").formatted(Formatting.YELLOW));
         revLore.add(Text.literal("§f N I N"));
         revLore.add(Text.literal("§f I T I"));
         revLore.add(Text.literal("§f N I N"));
@@ -2451,9 +2451,9 @@ public class LifeSteal implements ModInitializer {
         adrenaline.set(DataComponentTypes.ITEM_NAME, Text.literal("Adrenaline Shot").formatted(Formatting.RED, Formatting.BOLD));
         adrenaline.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> adrLore = new ArrayList<>();
-        adrLore.add(Text.literal("§7Silný bojový lektvar."));
+        adrLore.add(Text.literal("Silný bojový lektvar.").formatted(Formatting.GRAY));
         adrLore.add(Text.literal(""));
-        adrLore.add(Text.literal("§eRecept (Crafting Table):"));
+        adrLore.add(Text.literal("Recept (Crafting Table):").formatted(Formatting.YELLOW));
         adrLore.add(Text.literal("§f   S  "));
         adrLore.add(Text.literal("§f S N S"));
         adrLore.add(Text.literal("§f   R  "));
@@ -2469,9 +2469,9 @@ public class LifeSteal implements ModInitializer {
         ironskin.set(DataComponentTypes.ITEM_NAME, Text.literal("Iron Skin Potion").formatted(Formatting.GRAY, Formatting.BOLD));
         ironskin.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> isLore = new ArrayList<>();
-        isLore.add(Text.literal("§7Lektvar odolnosti."));
+        isLore.add(Text.literal("Lektvar odolnosti.").formatted(Formatting.GRAY));
         isLore.add(Text.literal(""));
-        isLore.add(Text.literal("§eRecept (Crafting Table):"));
+        isLore.add(Text.literal("Recept (Crafting Table):").formatted(Formatting.YELLOW));
         isLore.add(Text.literal("§f I I I"));
         isLore.add(Text.literal("§f I N I"));
         isLore.add(Text.literal("§f S S S"));
@@ -2487,9 +2487,9 @@ public class LifeSteal implements ModInitializer {
         magPearl.set(DataComponentTypes.ITEM_NAME, Text.literal("Magnetic Pearl").formatted(Formatting.DARK_PURPLE, Formatting.BOLD));
         magPearl.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> mpLore = new ArrayList<>();
-        mpLore.add(Text.literal("§7Magnetická ender perla."));
+        mpLore.add(Text.literal("Magnetická ender perla.").formatted(Formatting.GRAY));
         mpLore.add(Text.literal(""));
-        mpLore.add(Text.literal("§eRecept (Crafting Table):"));
+        mpLore.add(Text.literal("Recept (Crafting Table):").formatted(Formatting.YELLOW));
         mpLore.add(Text.literal("§f   N  "));
         mpLore.add(Text.literal("§f N E N"));
         mpLore.add(Text.literal("§f   N  "));
@@ -2504,9 +2504,9 @@ public class LifeSteal implements ModInitializer {
         echoHorn.set(DataComponentTypes.ITEM_NAME, Text.literal("Echoing Horn").formatted(Formatting.BLUE, Formatting.BOLD));
         echoHorn.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         List<Text> ehLore = new ArrayList<>();
-        ehLore.add(Text.literal("§7Zvukový roh."));
+        ehLore.add(Text.literal("Zvukový roh.").formatted(Formatting.GRAY));
         ehLore.add(Text.literal(""));
-        ehLore.add(Text.literal("§eRecept (Crafting Table):"));
+        ehLore.add(Text.literal("Recept (Crafting Table):").formatted(Formatting.YELLOW));
         ehLore.add(Text.literal("§f   E  "));
         ehLore.add(Text.literal("§f E G E"));
         ehLore.add(Text.literal("§f   E  "));
@@ -2518,12 +2518,12 @@ public class LifeSteal implements ModInitializer {
 
         // Slot 49 - Back
         ItemStack backItem = new ItemStack(Items.ARROW);
-        backItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§7← Zpět do Menu"));
+        backItem.set(DataComponentTypes.ITEM_NAME, Text.literal("← Zpět do Menu").formatted(Formatting.GRAY));
         inv.setStack(49, backItem);
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) ->
             net.minecraft.screen.GenericContainerScreenHandler.createGeneric9x6(syncId, playerInventory, inv),
-            Text.literal("§8Crafty")));
+            Text.literal("Crafty").formatted(Formatting.DARK_GRAY)));
         OPEN_MENUS.put(player.getUuid(), "crafts");
     }
 
@@ -2543,14 +2543,18 @@ public class LifeSteal implements ModInitializer {
             } else {
                 item = new ItemStack(Items.GRAY_DYE);
             }
-            item.set(DataComponentTypes.ITEM_NAME, Text.literal((unlocked ? "§a✔ " : "§c✘ ") + "§l" + a.name));
+            item.set(DataComponentTypes.ITEM_NAME, unlocked
+                ? Text.literal("✔ " + a.name).formatted(Formatting.GREEN, Formatting.BOLD)
+                : Text.literal("✘ " + a.name).formatted(Formatting.RED, Formatting.BOLD));
             List<Text> lore = new ArrayList<>();
-            lore.add(Text.literal("§7" + a.description));
+            lore.add(Text.literal(a.description).formatted(Formatting.GRAY));
             lore.add(Text.literal(""));
-            lore.add(Text.literal("§7Tier: §f" + a.tier));
-            lore.add(Text.literal(a.rewardMsg));
+            lore.add(Text.literal("Tier: " + a.tier).formatted(Formatting.GRAY));
+            lore.add(Text.literal(a.rewardMsg.replaceAll("§.", "")).formatted(Formatting.GRAY));
             lore.add(Text.literal(""));
-            lore.add(Text.literal(unlocked ? "§a§lODEMČENO" : "§c§lZAMČENO"));
+            lore.add(unlocked
+                ? Text.literal("ODEMČENO").formatted(Formatting.GREEN, Formatting.BOLD)
+                : Text.literal("ZAMČENO").formatted(Formatting.RED, Formatting.BOLD));
             item.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
             inv.setStack(slot, item);
             slot += 2;
@@ -2562,12 +2566,12 @@ public class LifeSteal implements ModInitializer {
 
         // Slot 49 - Back
         ItemStack backItem = new ItemStack(Items.ARROW);
-        backItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§7← Zpět do Menu"));
+        backItem.set(DataComponentTypes.ITEM_NAME, Text.literal("← Zpět do Menu").formatted(Formatting.GRAY));
         inv.setStack(49, backItem);
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) ->
             net.minecraft.screen.GenericContainerScreenHandler.createGeneric9x6(syncId, playerInventory, inv),
-            Text.literal("§8Úspěchy")));
+            Text.literal("Úspěchy").formatted(Formatting.DARK_GRAY)));
         OPEN_MENUS.put(player.getUuid(), "achievements");
     }
 
@@ -2616,14 +2620,16 @@ public class LifeSteal implements ModInitializer {
         SimpleInventory inv = new SimpleInventory(27);
 
         ItemStack statusItem = new ItemStack(oracleState.votingActive ? Items.LIME_CONCRETE : Items.RED_CONCRETE);
-        statusItem.set(DataComponentTypes.ITEM_NAME, Text.literal(oracleState.votingActive ? "§a§lHlasování aktivní" : "§c§lHlasování neaktivní"));
+        statusItem.set(DataComponentTypes.ITEM_NAME, oracleState.votingActive
+            ? Text.literal("Hlasování aktivní").formatted(Formatting.GREEN, Formatting.BOLD)
+            : Text.literal("Hlasování neaktivní").formatted(Formatting.RED, Formatting.BOLD));
         List<Text> statusLore = new ArrayList<>();
         if (oracleState.votingActive) {
             long remaining = Math.max(0L, oracleState.votingEndTime - System.currentTimeMillis());
-            statusLore.add(Text.literal("§7Zbývá: §f" + formatDuration(remaining)));
-            statusLore.add(Text.literal("§7Hlasuj kliknutím na jednu z možností dole."));
+            statusLore.add(Text.literal("Zbývá: " + formatDuration(remaining)).formatted(Formatting.GRAY));
+            statusLore.add(Text.literal("Hlasuj kliknutím na jednu z možností dole.").formatted(Formatting.GRAY));
         } else {
-            statusLore.add(Text.literal("§7Hlasování se spouští ručně nebo o víkendu."));
+            statusLore.add(Text.literal("Hlasování se spouští ručně nebo o víkendu.").formatted(Formatting.GRAY));
         }
         statusItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(statusLore));
         inv.setStack(4, statusItem);
@@ -2635,29 +2641,29 @@ public class LifeSteal implements ModInitializer {
                 int votes = VOTE_COUNTS.getOrDefault(i + 1, 0);
 
                 ItemStack option = new ItemStack(Items.PAPER);
-                option.set(DataComponentTypes.ITEM_NAME, Text.literal("§a" + (i + 1) + ". §f" + eventName));
+                option.set(DataComponentTypes.ITEM_NAME, Text.literal((i + 1) + ". " + eventName).formatted(Formatting.GREEN));
                 List<Text> lore = new ArrayList<>();
-                lore.add(Text.literal("§7Hlasů: §f" + votes));
-                lore.add(Text.literal("§7Klikni pro hlasování."));
+                lore.add(Text.literal("Hlasů: " + votes).formatted(Formatting.GRAY));
+                lore.add(Text.literal("Klikni pro hlasování.").formatted(Formatting.GRAY));
                 option.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
                 inv.setStack(10 + i, option);
             }
         } else {
             ItemStack info = new ItemStack(Items.BARRIER);
-            info.set(DataComponentTypes.ITEM_NAME, Text.literal("§cHlasování není aktivní"));
+            info.set(DataComponentTypes.ITEM_NAME, Text.literal("Hlasování není aktivní").formatted(Formatting.RED));
             List<Text> lore = new ArrayList<>();
-            lore.add(Text.literal("§7Hlasování běží 30 minut od spuštění."));
+            lore.add(Text.literal("Hlasování běží 30 minut od spuštění.").formatted(Formatting.GRAY));
             info.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
             inv.setStack(11, info);
         }
 
         ItemStack backItem = new ItemStack(Items.ARROW);
-        backItem.set(DataComponentTypes.ITEM_NAME, Text.literal("§7← Zpět do Menu"));
+        backItem.set(DataComponentTypes.ITEM_NAME, Text.literal("← Zpět do Menu").formatted(Formatting.GRAY));
         inv.setStack(22, backItem);
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) ->
             net.minecraft.screen.GenericContainerScreenHandler.createGeneric9x3(syncId, playerInventory, inv),
-            Text.literal("§8Oracle Hlasování")));
+            Text.literal("Oracle Hlasování").formatted(Formatting.DARK_GRAY)));
         OPEN_MENUS.put(player.getUuid(), "voting");
     }
 
