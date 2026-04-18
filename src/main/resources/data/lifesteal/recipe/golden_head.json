@@ -6,8 +6,8 @@
     "GGG"
   ],
   "key": {
-    "G": { "item": "minecraft:gold_block" },
-    "P": { "item": "minecraft:player_head" }
+    "G": "minecraft:gold_block",
+    "P": "minecraft:player_head"
   },
   "result": {
     "count": 1,

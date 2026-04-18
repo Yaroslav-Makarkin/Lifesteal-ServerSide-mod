@@ -6,9 +6,9 @@
     "NTN"
   ],
   "key": {
-    "N": { "item": "minecraft:netherite_block" },
-    "T": { "item": "minecraft:totem_of_undying" },
-    "B": { "item": "minecraft:beacon" }
+    "N": "minecraft:netherite_block",
+    "T": "minecraft:totem_of_undying",
+    "B": "minecraft:beacon"
   },
   "result": {
     "count": 1,

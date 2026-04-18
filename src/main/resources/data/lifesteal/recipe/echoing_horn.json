@@ -6,8 +6,8 @@
     " E "
   ],
   "key": {
-    "E": { "item": "minecraft:echo_shard" },
-    "G": { "item": "minecraft:goat_horn" }
+    "E": "minecraft:echo_shard",
+    "G": "minecraft:goat_horn"
   },
   "result": {
     "id": "minecraft:goat_horn",
