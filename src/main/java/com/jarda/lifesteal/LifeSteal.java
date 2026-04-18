@@ -155,6 +155,15 @@ public class LifeSteal implements ModInitializer {
     private static final Map<UUID, Integer> PLAYER_VOTES = new HashMap<>();
     private static final Map<Integer, Integer> VOTE_COUNTS = new HashMap<>();
     private static final Map<UUID, UUID> SHARED_FATE_LINKS = new HashMap<>();
+    private static final List<List<Item>> COLLECTION_REQUIREMENT_POOLS = List.of(
+        List.of(Items.ROTTEN_FLESH, Items.BONE, Items.STRING, Items.GUNPOWDER),
+        List.of(Items.SPIDER_EYE, Items.SLIME_BALL, Items.BLAZE_POWDER, Items.ENDER_PEARL),
+        List.of(Items.PHANTOM_MEMBRANE, Items.MAGMA_CREAM, Items.GHAST_TEAR, Items.BONE),
+        List.of(Items.LEATHER, Items.FEATHER, Items.INK_SAC, Items.RABBIT_HIDE)
+    );
+    private static final long COLLECTION_ROTATION_MS = 300000L;
+    private static int activeCollectionRequirementIndex = -1;
+    private static long nextCollectionRotationMs = 0L;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path dataPath;
     private static Path oraclePath;
@@ -3959,11 +3968,52 @@ public class LifeSteal implements ModInitializer {
 
     private static void broadcastEventHint(MinecraftServer server, int eventId) {
         if (eventId == 54) {
-            server.getPlayerManager().broadcast(Text.literal("§e[Collection] Doneste: §f1x Rotten Flesh, 1x Bone, 1x String, 1x Gunpowder"), false);
+            rotateCollectionRequirements(server, true);
             server.getPlayerManager().broadcast(Text.literal("§e[Collection] Odměna: §f+2 Emeraldy a +5 XP (opakovatelně během eventu)."), false);
         } else if (eventId == 12) {
             server.getPlayerManager().broadcast(Text.literal("§e[Lost Compass] Kompas je dezorientovaný a mapy jsou během eventu nečitelné."), false);
         }
+    }
+
+    private static void rotateCollectionRequirements(MinecraftServer server, boolean forceBroadcast) {
+        if (COLLECTION_REQUIREMENT_POOLS.isEmpty()) return;
+
+        int nextIndex;
+        if (COLLECTION_REQUIREMENT_POOLS.size() == 1) {
+            nextIndex = 0;
+        } else {
+            Random random = new Random();
+            if (activeCollectionRequirementIndex < 0 || activeCollectionRequirementIndex >= COLLECTION_REQUIREMENT_POOLS.size()) {
+                nextIndex = random.nextInt(COLLECTION_REQUIREMENT_POOLS.size());
+            } else {
+                nextIndex = random.nextInt(COLLECTION_REQUIREMENT_POOLS.size() - 1);
+                if (nextIndex >= activeCollectionRequirementIndex) {
+                    nextIndex++;
+                }
+            }
+        }
+
+        activeCollectionRequirementIndex = nextIndex;
+        nextCollectionRotationMs = System.currentTimeMillis() + COLLECTION_ROTATION_MS;
+
+        if (forceBroadcast) {
+            broadcastCollectionRequirements(server);
+        }
+    }
+
+    private static List<Item> getActiveCollectionRequirements(MinecraftServer server) {
+        if (activeCollectionRequirementIndex < 0 || activeCollectionRequirementIndex >= COLLECTION_REQUIREMENT_POOLS.size()) {
+            rotateCollectionRequirements(server, true);
+        }
+        return COLLECTION_REQUIREMENT_POOLS.get(activeCollectionRequirementIndex);
+    }
+
+    private static void broadcastCollectionRequirements(MinecraftServer server) {
+        List<Item> requirements = getActiveCollectionRequirements(server);
+        String requirementText = requirements.stream()
+            .map(item -> "1x " + new ItemStack(item).getName().getString())
+            .collect(Collectors.joining(", "));
+        server.getPlayerManager().broadcast(Text.literal("§e[Collection] Doneste: §f" + requirementText), false);
     }
 
     private static void antiSnowball(MinecraftServer server) {
@@ -4439,15 +4489,30 @@ public class LifeSteal implements ModInitializer {
                     addEffect(p, new StatusEffectInstance(StatusEffects.WEAKNESS, 40, 0, false, false));
                 }
             } else if (effect == 54) { // Collection
-                if (isSecond && hasItems(p, Items.ROTTEN_FLESH, 1) && hasItems(p, Items.BONE, 1) && hasItems(p, Items.STRING, 1) && hasItems(p, Items.GUNPOWDER, 1)) {
-                    removeItems(p, Items.ROTTEN_FLESH, 1);
-                    removeItems(p, Items.BONE, 1);
-                    removeItems(p, Items.STRING, 1);
-                    removeItems(p, Items.GUNPOWDER, 1);
-                    ItemStack reward = new ItemStack(Items.EMERALD, 2);
-                    if (!p.getInventory().insertStack(reward.copy())) p.dropItem(reward, false);
-                    p.addExperience(5);
-                    p.sendMessage(Text.literal("§aCollection splněna: +2 Emeraldy a +5 XP."), true);
+                if (isSecond) {
+                    long now = System.currentTimeMillis();
+                    if (nextCollectionRotationMs <= 0 || now >= nextCollectionRotationMs) {
+                        rotateCollectionRequirements(server, true);
+                    }
+
+                    List<Item> requirements = getActiveCollectionRequirements(server);
+                    boolean hasAllItems = true;
+                    for (Item requirement : requirements) {
+                        if (!hasItems(p, requirement, 1)) {
+                            hasAllItems = false;
+                            break;
+                        }
+                    }
+
+                    if (hasAllItems) {
+                        for (Item requirement : requirements) {
+                            removeItems(p, requirement, 1);
+                        }
+                        ItemStack reward = new ItemStack(Items.EMERALD, 2);
+                        if (!p.getInventory().insertStack(reward.copy())) p.dropItem(reward, false);
+                        p.addExperience(5);
+                        p.sendMessage(Text.literal("§aCollection splněna: +2 Emeraldy a +5 XP."), true);
+                    }
                 }
             } else if (effect == 58) { // Mini-Players
                 EntityAttributeInstance scaleAttr = p.getAttributeInstance(EntityAttributes.SCALE);
