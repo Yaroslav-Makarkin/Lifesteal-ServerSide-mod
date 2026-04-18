@@ -612,6 +612,11 @@ public class LifeSteal implements ModInitializer {
                 return ActionResult.FAIL;
             }
 
+            if (player instanceof ServerPlayerEntity sp && entity instanceof ArmorStandEntity && isInSpawnProtection(sp, entity.getBlockPos())) {
+                sp.sendMessage(Text.literal("§cNa spawnu nelze používat armor standy."), true);
+                return ActionResult.FAIL;
+            }
+
             // Villagers on Strike (15)
             if (!world.isClient() && oracleState.currentActiveEffect == 15 && entity instanceof net.minecraft.entity.passive.VillagerEntity) {
                 if (player instanceof ServerPlayerEntity sp) {
