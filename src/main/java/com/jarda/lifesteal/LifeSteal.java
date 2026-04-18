@@ -908,7 +908,7 @@ public class LifeSteal implements ModInitializer {
                     }
                 } else {
                     context.getSource().sendFeedback(() -> Text.literal("§7Žádný event momentálně neprobíhá."), false);
-                    context.getSource().sendFeedback(() -> Text.literal("§7Hlasování probíhá každou sobotu 15:00–15:30."), false);
+                    context.getSource().sendFeedback(() -> Text.literal("§7Hlasování běží 30 minut od spuštění."), false);
                 }
 
                 context.getSource().sendFeedback(() -> Text.literal("§6§l════════════════════"), false);
@@ -1574,7 +1574,6 @@ public class LifeSteal implements ModInitializer {
             }
 
             updatePlayerStats(joinedPlayer);
-            if (oracleState.votingActive) giveVoteTicket(joinedPlayer);
             LAST_POS.put(id, new Vec3d(joinedPlayer.getX(), joinedPlayer.getY(), joinedPlayer.getZ()));
             IN_AIR_TICKS.put(id, 0);
             JOIN_TIMES.put(id, System.currentTimeMillis());
@@ -2537,6 +2536,19 @@ public class LifeSteal implements ModInitializer {
     public static void openVotingMenu(ServerPlayerEntity player) {
         SimpleInventory inv = new SimpleInventory(27);
 
+        ItemStack statusItem = new ItemStack(oracleState.votingActive ? Items.LIME_CONCRETE : Items.RED_CONCRETE);
+        statusItem.set(DataComponentTypes.ITEM_NAME, Text.literal(oracleState.votingActive ? "§a§lHlasování aktivní" : "§c§lHlasování neaktivní"));
+        List<Text> statusLore = new ArrayList<>();
+        if (oracleState.votingActive) {
+            long remaining = Math.max(0L, oracleState.votingEndTime - System.currentTimeMillis());
+            statusLore.add(Text.literal("§7Zbývá: §f" + formatDuration(remaining)));
+            statusLore.add(Text.literal("§7Hlasuj kliknutím na jednu z možností dole."));
+        } else {
+            statusLore.add(Text.literal("§7Hlasování se spouští ručně nebo o víkendu."));
+        }
+        statusItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(statusLore));
+        inv.setStack(4, statusItem);
+
         if (oracleState.votingActive && !oracleState.currentOptions.isEmpty()) {
             for (int i = 0; i < Math.min(3, oracleState.currentOptions.size()); i++) {
                 int eventId = oracleState.currentOptions.get(i);
@@ -3425,42 +3437,6 @@ public class LifeSteal implements ModInitializer {
         });
     }
 
-    private static void giveVoteTicket(ServerPlayerEntity player) {
-        if (oracleState.currentOptions.isEmpty()) return;
-        if (oracleState.receivedVoteTicketUuids.contains(player.getUuid().toString())) return;
-        oracleState.receivedVoteTicketUuids.add(player.getUuid().toString());
-        saveData();
-        
-        ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
-        List<net.minecraft.text.RawFilteredPair<Text>> pages = new ArrayList<>();
-        
-        Text page1 = Text.literal("§0§lThe Oracle\n\n§rVyber si jednu z možností pro příští týden:\n\n");
-        for (int i = 0; i < oracleState.currentOptions.size(); i++) {
-             int eventId = oracleState.currentOptions.get(i);
-               page1 = ((net.minecraft.text.MutableText)page1).append(createVoteOption(EVENT_NAMES.get(eventId)));
-        }
-            
-        pages.add(net.minecraft.text.RawFilteredPair.of(page1));
-        
-        book.set(DataComponentTypes.WRITTEN_BOOK_CONTENT, new WrittenBookContentComponent(
-            net.minecraft.text.RawFilteredPair.of("Book of Fate"),
-            "The Oracle",
-            0,
-            pages,
-            true
-        ));
-        
-        if (!player.getInventory().insertStack(book)) {
-            player.dropItem(book, false);
-        }
-    }
-
-    private static Text createVoteOption(String label) {
-        return Text.literal("§1[✔] " + label + "\n")
-            .append(Text.literal("    §7(Hlasuj v /menu)").styled(s -> s.withColor(Formatting.GRAY)))
-            .append(Text.literal("\n\n"));
-    }
-
     private static boolean isVotingWindowNow() {
         return oracleState.votingActive && System.currentTimeMillis() <= oracleState.votingEndTime;
     }
@@ -3654,11 +3630,7 @@ public class LifeSteal implements ModInitializer {
         }
         syncVoteStateFromRuntime();
         
-        server.getPlayerManager().broadcast(Text.literal("§6§l[The Oracle] §eHlasování o víkendový efekt začalo! Použij knihu v inventáři."), false);
-        
-        for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
-            giveVoteTicket(p);
-        }
+        server.getPlayerManager().broadcast(Text.literal("§6§l[The Oracle] §eHlasování o víkendový efekt začalo! Otevři /menu pro stav a hlasování."), false);
         saveData();
     }
 
