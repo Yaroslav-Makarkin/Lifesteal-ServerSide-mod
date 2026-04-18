@@ -483,7 +483,7 @@ public class LifeSteal implements ModInitializer {
             }
 
             // Lava fishing (49): right-click fishing rod while touching lava can grant loot
-            if (oracleState.currentActiveEffect == 49 && stack.isOf(Items.FISHING_ROD) && (player.isInLava() || player.getEntityWorld().getBlockState(player.getBlockPos().down()).isOf(Blocks.LAVA))) {
+            if (oracleState.currentActiveEffect == 49 && stack.isOf(Items.FISHING_ROD) && isNearLava(player.getEntityWorld(), player.getBlockPos())) {
                 if (world.random.nextFloat() < 0.12f) {
                     Item[] lavaLoot = {Items.BLAZE_ROD, Items.MAGMA_CREAM, Items.GOLD_INGOT, Items.QUARTZ, Items.OBSIDIAN};
                     ItemStack reward = new ItemStack(lavaLoot[world.random.nextInt(lavaLoot.length)], world.random.nextInt(2) + 1);
@@ -493,7 +493,7 @@ public class LifeSteal implements ModInitializer {
             }
 
             // TNT Fishing (65): right-click fishing rod while touching lava can grant TNT
-            if (oracleState.currentActiveEffect == 65 && stack.isOf(Items.FISHING_ROD) && (player.isInLava() || player.getEntityWorld().getBlockState(player.getBlockPos().down()).isOf(Blocks.LAVA))) {
+            if (oracleState.currentActiveEffect == 65 && stack.isOf(Items.FISHING_ROD) && isNearLava(player.getEntityWorld(), player.getBlockPos())) {
                 if (world.random.nextFloat() < 0.16f) {
                     ItemStack reward = new ItemStack(Items.TNT, world.random.nextFloat() < 0.25f ? 2 : 1);
                     if (!player.getInventory().insertStack(reward.copy())) player.dropItem(reward, false);
@@ -3466,6 +3466,19 @@ public class LifeSteal implements ModInitializer {
         double dz = pos.getZ() - oracleState.spawnZ;
         double distanceSq = dx * dx + dz * dz;
         return distanceSq <= (oracleState.spawnProtectionRadius * oracleState.spawnProtectionRadius);
+    }
+
+    private static boolean isNearLava(World world, BlockPos center) {
+        for (int x = -2; x <= 2; x++) {
+            for (int y = -1; y <= 1; y++) {
+                for (int z = -2; z <= 2; z++) {
+                    if (world.getBlockState(center.add(x, y, z)).isOf(Blocks.LAVA)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     public static void updatePlayerStats(ServerPlayerEntity player) {
