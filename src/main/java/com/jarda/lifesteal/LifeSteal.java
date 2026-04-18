@@ -491,6 +491,18 @@ public class LifeSteal implements ModInitializer {
                     world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENTITY_FISHING_BOBBER_RETRIEVE, SoundCategory.PLAYERS, 0.8f, 0.8f);
                 }
             }
+
+            // TNT Fishing (65): right-click fishing rod while touching lava can grant TNT
+            if (oracleState.currentActiveEffect == 65 && stack.isOf(Items.FISHING_ROD) && (player.isInLava() || player.getEntityWorld().getBlockState(player.getBlockPos().down()).isOf(Blocks.LAVA))) {
+                if (world.random.nextFloat() < 0.16f) {
+                    ItemStack reward = new ItemStack(Items.TNT, world.random.nextFloat() < 0.25f ? 2 : 1);
+                    if (!player.getInventory().insertStack(reward.copy())) player.dropItem(reward, false);
+                    world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENTITY_FISHING_BOBBER_RETRIEVE, SoundCategory.PLAYERS, 0.8f, 0.9f);
+                    if (player instanceof ServerPlayerEntity sp) {
+                        sp.sendMessage(Text.literal("§cTNT Fishing: vytáhl jsi TNT!"), true);
+                    }
+                }
+            }
             // New items logic
             NbtComponent customNbt = stack.get(DataComponentTypes.CUSTOM_DATA);
             if (customNbt != null) {
