@@ -2555,7 +2555,7 @@ public class LifeSteal implements ModInitializer {
             ItemStack info = new ItemStack(Items.BARRIER);
             info.set(DataComponentTypes.ITEM_NAME, Text.literal("§cHlasování není aktivní"));
             List<Text> lore = new ArrayList<>();
-            lore.add(Text.literal("§7Hlasování běží v sobotu 15:00–15:30."));
+            lore.add(Text.literal("§7Hlasování běží 30 minut od spuštění."));
             info.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
             inv.setStack(11, info);
         }
@@ -3462,11 +3462,7 @@ public class LifeSteal implements ModInitializer {
     }
 
     private static boolean isVotingWindowNow() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalTime time = now.toLocalTime();
-        return now.getDayOfWeek() == DayOfWeek.SATURDAY
-            && !time.isBefore(LocalTime.of(15, 0))
-            && time.isBefore(LocalTime.of(15, 30));
+        return oracleState.votingActive && System.currentTimeMillis() <= oracleState.votingEndTime;
     }
 
     private static int submitVote(ServerPlayerEntity player, int id) {
@@ -3479,7 +3475,7 @@ public class LifeSteal implements ModInitializer {
             return 0;
         }
         if (!isVotingWindowNow()) {
-            player.sendMessage(Text.literal("§cHlasovat lze pouze v sobotu mezi 15:00 a 15:30."), false);
+            player.sendMessage(Text.literal("§cHlasování už skončilo."), false);
             return 0;
         }
         if (id < 1 || id > oracleState.currentOptions.size()) {
@@ -3509,7 +3505,7 @@ public class LifeSteal implements ModInitializer {
         LocalDateTime now = LocalDateTime.now();
         int currentWeek = now.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR);
         
-        // Voting window: Saturday 15:00 - 15:30
+        // Scheduled voting starts on Saturday, but the voting window itself is always 30 minutes from start.
         if (now.getDayOfWeek() == DayOfWeek.SATURDAY && now.getHour() == 15 && now.getMinute() < 30) {
             if (!oracleState.votingActive && oracleState.lastWeekVoted != currentWeek) {
                 startVoting(server, currentWeek);
