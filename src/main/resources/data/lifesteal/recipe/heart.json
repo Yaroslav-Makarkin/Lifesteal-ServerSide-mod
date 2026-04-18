@@ -20,7 +20,8 @@
       "minecraft:item_name": "{\"text\":\"Heart\",\"color\":\"red\",\"bold\":true}",
       "minecraft:lore": [
         "{\"text\":\"Přidá +1 srdce k max. zdraví po použití.\",\"color\":\"gray\",\"italic\":false}"
-      ]
+      ],
+      "minecraft:enchantment_glint_override": true
     }
   }
 }
