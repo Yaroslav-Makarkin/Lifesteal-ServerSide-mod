@@ -3,7 +3,6 @@ package com.jarda.lifesteal;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.mojang.authlib.properties.Property;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -32,7 +31,6 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
-import net.minecraft.component.type.WrittenBookContentComponent;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.ItemEntity;
@@ -55,7 +53,6 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.server.PlayerConfigEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.scoreboard.*;
@@ -1719,10 +1716,6 @@ public class LifeSteal implements ModInitializer {
                 }
             }
 
-            if (!alive && oracleState.spawnSet) {
-                scheduleSpawnTeleport(newPlayer.getUuid());
-            }
-
             updatePlayerStats(newPlayer);
         });
 
@@ -2885,13 +2878,6 @@ public class LifeSteal implements ModInitializer {
         player.getInventory().markDirty();
         player.playerScreenHandler.sendContentUpdates();
         return true;
-    }
-
-    private static void addItems(ServerPlayerEntity player, Item item, int count) {
-        ItemStack refund = new ItemStack(item, count);
-        if (!player.getInventory().insertStack(refund)) {
-            player.dropItem(refund, false);
-        }
     }
 
     private static int giveOrDropStacks(ServerPlayerEntity player, List<ItemStack> stacks) {
