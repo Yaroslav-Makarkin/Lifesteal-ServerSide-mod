@@ -6,8 +6,8 @@
     " N "
   ],
   "key": {
-    "N": "minecraft:netherite_ingot",
-    "E": "minecraft:ender_pearl"
+    "N": { "item": "minecraft:netherite_ingot" },
+    "E": { "item": "minecraft:ender_pearl" }
   },
   "result": {
     "id": "minecraft:ender_pearl",

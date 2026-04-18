@@ -6,9 +6,9 @@
     "SSS"
   ],
   "key": {
-    "I": "minecraft:iron_block",
-    "N": "minecraft:nether_star",
-    "S": "minecraft:turtle_scute"
+    "I": { "item": "minecraft:iron_block" },
+    "N": { "item": "minecraft:nether_star" },
+    "S": { "item": "minecraft:turtle_scute" }
   },
   "result": {
     "id": "minecraft:potion",
