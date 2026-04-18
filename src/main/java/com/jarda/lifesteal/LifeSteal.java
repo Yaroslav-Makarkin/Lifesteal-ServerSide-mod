@@ -1756,6 +1756,12 @@ public class LifeSteal implements ModInitializer {
                         victim.sendMessage(Text.literal("Revival Heart tě ochránilo před ztrátou srdce.").formatted(Formatting.AQUA), false);
                         break;
                     }
+                    if (stack.isOf(Items.TOTEM_OF_UNDYING)) {
+                        stack.decrement(1);
+                        protectedFromHeartLoss = true;
+                        victim.sendMessage(Text.literal("Totem tě ochránil před ztrátou srdce.").formatted(Formatting.GOLD), false);
+                        break;
+                    }
                 }
 
                 if (damageSource.getAttacker() instanceof ServerPlayerEntity killer) {
