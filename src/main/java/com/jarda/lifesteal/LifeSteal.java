@@ -156,12 +156,12 @@ public class LifeSteal implements ModInitializer {
     private static final Map<Integer, Integer> VOTE_COUNTS = new HashMap<>();
     private static final Map<UUID, UUID> SHARED_FATE_LINKS = new HashMap<>();
     private static final List<List<Item>> COLLECTION_REQUIREMENT_POOLS = List.of(
-        List.of(Items.ROTTEN_FLESH, Items.BONE, Items.STRING, Items.GUNPOWDER),
-        List.of(Items.SPIDER_EYE, Items.SLIME_BALL, Items.BLAZE_POWDER, Items.ENDER_PEARL),
-        List.of(Items.PHANTOM_MEMBRANE, Items.MAGMA_CREAM, Items.GHAST_TEAR, Items.BONE),
-        List.of(Items.LEATHER, Items.FEATHER, Items.INK_SAC, Items.RABBIT_HIDE)
+        List.of(Items.NETHER_STAR, Items.HEART_OF_THE_SEA, Items.TOTEM_OF_UNDYING, Items.ELYTRA),
+        List.of(Items.NETHERITE_INGOT, Items.SHULKER_SHELL, Items.GHAST_TEAR, Items.BLAZE_ROD),
+        List.of(Items.ANCIENT_DEBRIS, Items.DRAGON_BREATH, Items.ECHO_SHARD, Items.WITHER_SKELETON_SKULL),
+        List.of(Items.ENCHANTED_GOLDEN_APPLE, Items.NAUTILUS_SHELL, Items.PHANTOM_MEMBRANE, Items.ENDER_EYE)
     );
-    private static final long COLLECTION_ROTATION_MS = 300000L;
+    private static final long COLLECTION_ROTATION_MS = 1800000L;
     private static int activeCollectionRequirementIndex = -1;
     private static long nextCollectionRotationMs = 0L;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -3970,6 +3970,7 @@ public class LifeSteal implements ModInitializer {
         if (eventId == 54) {
             rotateCollectionRequirements(server, true);
             server.getPlayerManager().broadcast(Text.literal("§e[Collection] Odměna: §f+2 Emeraldy a +5 XP (opakovatelně během eventu)."), false);
+            server.getPlayerManager().broadcast(Text.literal("§e[Collection] Požadavky se mění náhodně každých 30 minut."), false);
         } else if (eventId == 12) {
             server.getPlayerManager().broadcast(Text.literal("§e[Lost Compass] Kompas je dezorientovaný a mapy jsou během eventu nečitelné."), false);
         }
