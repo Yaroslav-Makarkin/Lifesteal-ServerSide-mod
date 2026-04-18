@@ -462,12 +462,15 @@ public class LifeSteal implements ModInitializer {
                 }
             }
 
-            // Lost Compass (12): compasses/maps are disrupted
+            // Lost Compass (12): maps are blocked and compass orientation is destabilized by event logic.
             if (oracleState.currentActiveEffect == 12 && (stack.isOf(Items.COMPASS) || stack.isOf(Items.RECOVERY_COMPASS) || stack.isOf(Items.FILLED_MAP) || stack.isOf(Items.MAP))) {
                 if (player instanceof ServerPlayerEntity sp) {
-                    sp.sendMessage(Text.literal("§cKompas i mapy jsou během eventu Ztracený kompas nestabilní!"), true);
+                    sp.sendMessage(Text.literal("§cZtracený kompas: orientace je rozbitá."), true);
                 }
-                return ActionResult.FAIL;
+                if (stack.isOf(Items.FILLED_MAP) || stack.isOf(Items.MAP)) {
+                    return ActionResult.FAIL;
+                }
+                return ActionResult.PASS;
             }
 
             // Lava fishing (49): right-click fishing rod while touching lava can grant loot
@@ -1043,6 +1046,7 @@ public class LifeSteal implements ModInitializer {
 
                                 String eventName = EVENT_NAMES.getOrDefault(id, "Neznámý");
                                 context.getSource().getServer().getPlayerManager().broadcast(Text.literal("§6§lOracle Admin: §eAktivován event č. " + id + " - " + eventName), false);
+                                broadcastEventHint(context.getSource().getServer(), id);
                                 
                                 // Title pro admin start
                                 for (ServerPlayerEntity p : context.getSource().getServer().getPlayerManager().getPlayerList()) {
@@ -3897,6 +3901,7 @@ public class LifeSteal implements ModInitializer {
         int winner = oracleState.currentOptions.get(winnerOption - 1);
         String eventName = EVENT_NAMES.getOrDefault(winner, "Neznámý");
         server.getPlayerManager().broadcast(Text.literal("§6§l[The Oracle] §aVítězem se stává: §f" + eventName), false);
+        broadcastEventHint(server, winner);
 
         // Zobrazení Title pro všechny hráče
         for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
@@ -3949,6 +3954,15 @@ public class LifeSteal implements ModInitializer {
             SHARED_FATE_LINKS.put(p2.getUuid(), p1.getUuid());
             p1.sendMessage(Text.literal("§d[The Oracle] Tvé osudy jsou nyní spojeny s hráče §e" + p2.getName().getString()), false);
             p2.sendMessage(Text.literal("§d[The Oracle] Tvé osudy jsou nyní spojeny s hráče §e" + p1.getName().getString()), false);
+        }
+    }
+
+    private static void broadcastEventHint(MinecraftServer server, int eventId) {
+        if (eventId == 54) {
+            server.getPlayerManager().broadcast(Text.literal("§e[Collection] Doneste: §f1x Rotten Flesh, 1x Bone, 1x String, 1x Gunpowder"), false);
+            server.getPlayerManager().broadcast(Text.literal("§e[Collection] Odměna: §f+2 Emeraldy a +5 XP (opakovatelně během eventu)."), false);
+        } else if (eventId == 12) {
+            server.getPlayerManager().broadcast(Text.literal("§e[Lost Compass] Kompas je dezorientovaný a mapy jsou během eventu nečitelné."), false);
         }
     }
 
@@ -4250,6 +4264,12 @@ public class LifeSteal implements ModInitializer {
                 addEffect(p, new StatusEffectInstance(StatusEffects.HASTE, 40, 0, false, false));
             } else if (effect == 12) { // Lost Compass
                 addEffect(p, new StatusEffectInstance(StatusEffects.NAUSEA, 40, 0, false, false));
+                if (isSecond) {
+                    float randomYaw = sw.random.nextFloat() * 360.0f;
+                    p.setYaw(randomYaw);
+                    p.setHeadYaw(randomYaw);
+                    p.setBodyYaw(randomYaw);
+                }
             } else if (effect == 14) { // Diamond Inflation - mining speed reduced
                 addEffect(p, new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 40, 0, false, false));
             } else if (effect == 15) { // Villagers on Strike - no trading hint
