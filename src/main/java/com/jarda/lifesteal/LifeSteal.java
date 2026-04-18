@@ -2256,11 +2256,90 @@ public class LifeSteal implements ModInitializer {
 
             String menuType = entry.getValue();
             if ("main".equals(menuType)) {
-                openMainMenu(player);
+                refreshMainMenuInPlace(player);
             } else if ("voting".equals(menuType)) {
-                openVotingMenu(player);
+                refreshVotingMenuInPlace(player);
             }
         }
+    }
+
+    private static void refreshMainMenuInPlace(ServerPlayerEntity player) {
+        if (player.currentScreenHandler == null || player.currentScreenHandler.slots.size() < 27) return;
+        player.currentScreenHandler.getSlot(4).setStack(buildMainMenuOracleStatusItem());
+        player.currentScreenHandler.sendContentUpdates();
+    }
+
+    private static void refreshVotingMenuInPlace(ServerPlayerEntity player) {
+        if (player.currentScreenHandler == null || player.currentScreenHandler.slots.size() < 27) return;
+
+        player.currentScreenHandler.getSlot(4).setStack(buildVotingStatusItem());
+        player.currentScreenHandler.getSlot(10).setStack(ItemStack.EMPTY);
+        player.currentScreenHandler.getSlot(11).setStack(ItemStack.EMPTY);
+        player.currentScreenHandler.getSlot(12).setStack(ItemStack.EMPTY);
+
+        if (oracleState.votingActive && !oracleState.currentOptions.isEmpty()) {
+            for (int i = 0; i < Math.min(3, oracleState.currentOptions.size()); i++) {
+                int eventId = oracleState.currentOptions.get(i);
+                String eventName = EVENT_NAMES.getOrDefault(eventId, "Neznámý");
+                int votes = VOTE_COUNTS.getOrDefault(i + 1, 0);
+
+                ItemStack option = new ItemStack(Items.PAPER);
+                option.set(DataComponentTypes.ITEM_NAME, Text.literal((i + 1) + ". " + eventName).formatted(Formatting.GREEN));
+                List<Text> lore = new ArrayList<>();
+                lore.add(Text.literal("Hlasů: " + votes).formatted(Formatting.GRAY));
+                lore.add(Text.literal("Klikni pro hlasování.").formatted(Formatting.GRAY));
+                option.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
+                player.currentScreenHandler.getSlot(10 + i).setStack(option);
+            }
+        } else {
+            ItemStack info = new ItemStack(Items.BARRIER);
+            info.set(DataComponentTypes.ITEM_NAME, Text.literal("Hlasování není aktivní").formatted(Formatting.RED));
+            List<Text> lore = new ArrayList<>();
+            lore.add(Text.literal("Hlasování běží 30 minut od spuštění.").formatted(Formatting.GRAY));
+            info.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(lore));
+            player.currentScreenHandler.getSlot(11).setStack(info);
+        }
+
+        player.currentScreenHandler.sendContentUpdates();
+    }
+
+    private static ItemStack buildMainMenuOracleStatusItem() {
+        ItemStack oracleStatus = new ItemStack(oracleState.votingActive ? Items.CLOCK : (oracleState.isEventActive ? Items.NETHER_STAR : Items.GRAY_DYE));
+        List<Text> oracleLore = new ArrayList<>();
+        if (oracleState.votingActive) {
+            long voteRemaining = Math.max(0L, oracleState.votingEndTime - System.currentTimeMillis());
+            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("Oracle: Hlasování").formatted(Formatting.YELLOW, Formatting.BOLD));
+            oracleLore.add(Text.literal("Stav: Aktivní").formatted(Formatting.GRAY));
+            oracleLore.add(Text.literal("Zbývá: " + formatDuration(voteRemaining)).formatted(Formatting.GRAY));
+        } else if (oracleState.isEventActive && oracleState.currentActiveEffect > 0) {
+            String eventName = EVENT_NAMES.getOrDefault(oracleState.currentActiveEffect, "Neznámý");
+            long eventRemaining = Math.max(0L, oracleState.effectEndTime - System.currentTimeMillis());
+            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("Oracle: Event").formatted(Formatting.GOLD, Formatting.BOLD));
+            oracleLore.add(Text.literal("Aktivní: " + eventName).formatted(Formatting.GRAY));
+            oracleLore.add(Text.literal("Zbývá: " + formatDuration(eventRemaining)).formatted(Formatting.GRAY));
+        } else {
+            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("Oracle: Neaktivní").formatted(Formatting.GRAY, Formatting.BOLD));
+            oracleLore.add(Text.literal("Aktuálně neběží hlasování ani event.").formatted(Formatting.GRAY));
+        }
+        oracleStatus.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(oracleLore));
+        return oracleStatus;
+    }
+
+    private static ItemStack buildVotingStatusItem() {
+        ItemStack statusItem = new ItemStack(oracleState.votingActive ? Items.LIME_CONCRETE : Items.RED_CONCRETE);
+        statusItem.set(DataComponentTypes.ITEM_NAME, oracleState.votingActive
+            ? Text.literal("Hlasování aktivní").formatted(Formatting.GREEN, Formatting.BOLD)
+            : Text.literal("Hlasování neaktivní").formatted(Formatting.RED, Formatting.BOLD));
+        List<Text> statusLore = new ArrayList<>();
+        if (oracleState.votingActive) {
+            long remaining = Math.max(0L, oracleState.votingEndTime - System.currentTimeMillis());
+            statusLore.add(Text.literal("Zbývá: " + formatDuration(remaining)).formatted(Formatting.GRAY));
+            statusLore.add(Text.literal("Hlasuj kliknutím na jednu z možností dole.").formatted(Formatting.GRAY));
+        } else {
+            statusLore.add(Text.literal("Hlasování se spouští ručně nebo o víkendu.").formatted(Formatting.GRAY));
+        }
+        statusItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(statusLore));
+        return statusItem;
     }
 
     private static void validateCustomRecipes(MinecraftServer server) {
@@ -2327,26 +2406,7 @@ public class LifeSteal implements ModInitializer {
     // ===== MENU SYSTEM =====
     public static void openMainMenu(ServerPlayerEntity player) {
         SimpleInventory inv = new SimpleInventory(27);
-
-        ItemStack oracleStatus = new ItemStack(oracleState.votingActive ? Items.CLOCK : (oracleState.isEventActive ? Items.NETHER_STAR : Items.GRAY_DYE));
-        List<Text> oracleLore = new ArrayList<>();
-        if (oracleState.votingActive) {
-            long voteRemaining = Math.max(0L, oracleState.votingEndTime - System.currentTimeMillis());
-            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("Oracle: Hlasování").formatted(Formatting.YELLOW, Formatting.BOLD));
-            oracleLore.add(Text.literal("Stav: Aktivní").formatted(Formatting.GRAY));
-            oracleLore.add(Text.literal("Zbývá: " + formatDuration(voteRemaining)).formatted(Formatting.GRAY));
-        } else if (oracleState.isEventActive && oracleState.currentActiveEffect > 0) {
-            String eventName = EVENT_NAMES.getOrDefault(oracleState.currentActiveEffect, "Neznámý");
-            long eventRemaining = Math.max(0L, oracleState.effectEndTime - System.currentTimeMillis());
-            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("Oracle: Event").formatted(Formatting.GOLD, Formatting.BOLD));
-            oracleLore.add(Text.literal("Aktivní: " + eventName).formatted(Formatting.GRAY));
-            oracleLore.add(Text.literal("Zbývá: " + formatDuration(eventRemaining)).formatted(Formatting.GRAY));
-        } else {
-            oracleStatus.set(DataComponentTypes.ITEM_NAME, Text.literal("Oracle: Neaktivní").formatted(Formatting.GRAY, Formatting.BOLD));
-            oracleLore.add(Text.literal("Aktuálně neběží hlasování ani event.").formatted(Formatting.GRAY));
-        }
-        oracleStatus.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(oracleLore));
-        inv.setStack(4, oracleStatus);
+        inv.setStack(4, buildMainMenuOracleStatusItem());
 
         // Slot 11 - My Stats
         ItemStack statsItem = new ItemStack(Items.BOOK);
@@ -2669,21 +2729,7 @@ public class LifeSteal implements ModInitializer {
 
     public static void openVotingMenu(ServerPlayerEntity player) {
         SimpleInventory inv = new SimpleInventory(27);
-
-        ItemStack statusItem = new ItemStack(oracleState.votingActive ? Items.LIME_CONCRETE : Items.RED_CONCRETE);
-        statusItem.set(DataComponentTypes.ITEM_NAME, oracleState.votingActive
-            ? Text.literal("Hlasování aktivní").formatted(Formatting.GREEN, Formatting.BOLD)
-            : Text.literal("Hlasování neaktivní").formatted(Formatting.RED, Formatting.BOLD));
-        List<Text> statusLore = new ArrayList<>();
-        if (oracleState.votingActive) {
-            long remaining = Math.max(0L, oracleState.votingEndTime - System.currentTimeMillis());
-            statusLore.add(Text.literal("Zbývá: " + formatDuration(remaining)).formatted(Formatting.GRAY));
-            statusLore.add(Text.literal("Hlasuj kliknutím na jednu z možností dole.").formatted(Formatting.GRAY));
-        } else {
-            statusLore.add(Text.literal("Hlasování se spouští ručně nebo o víkendu.").formatted(Formatting.GRAY));
-        }
-        statusItem.set(DataComponentTypes.LORE, new net.minecraft.component.type.LoreComponent(statusLore));
-        inv.setStack(4, statusItem);
+        inv.setStack(4, buildVotingStatusItem());
 
         if (oracleState.votingActive && !oracleState.currentOptions.isEmpty()) {
             for (int i = 0; i < Math.min(3, oracleState.currentOptions.size()); i++) {
