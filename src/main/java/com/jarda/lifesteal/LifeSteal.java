@@ -22,6 +22,7 @@ import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.Blocks;
@@ -53,6 +54,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.server.PlayerConfigEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.scoreboard.*;
@@ -96,6 +98,15 @@ public class LifeSteal implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     private static final Identifier HEALTH_MODIFIER_ID = Identifier.of(MOD_ID, "lifesteal_health");
+    private static final Set<Identifier> EXPECTED_CUSTOM_RECIPE_IDS = Set.of(
+        Identifier.of(MOD_ID, "heart"),
+        Identifier.of(MOD_ID, "golden_head"),
+        Identifier.of(MOD_ID, "revival_heart"),
+        Identifier.of(MOD_ID, "adrenaline_shot"),
+        Identifier.of(MOD_ID, "ironskin_potion"),
+        Identifier.of(MOD_ID, "magnetic_pearl"),
+        Identifier.of(MOD_ID, "echoing_horn")
+    );
     private static final String ELYTRA_BOSS_NAME = "§6§lHusk Strážce";
     private static final String BOSS_STRAY_NAME = "§b§lStray Strážce";
     private static final String BOSS_WITHER_NAME = "§8§lWither Strážce";
@@ -312,6 +323,8 @@ public class LifeSteal implements ModInitializer {
         LOGGER.info("LifeSteal SMP mod initializing...");
         loadData();
         syncVoteRuntimeFromState();
+
+        ServerLifecycleEvents.SERVER_STARTED.register(LifeSteal::validateCustomRecipes);
 
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             OPEN_SHOPS.clear();
@@ -2176,6 +2189,32 @@ public class LifeSteal implements ModInitializer {
                 }
             }
         });
+    }
+
+    private static void validateCustomRecipes(MinecraftServer server) {
+        Set<Identifier> loadedIds = server.getRecipeManager().values().stream()
+            .map(entry -> entry.id().getValue())
+            .collect(Collectors.toSet());
+
+        List<Identifier> missing = EXPECTED_CUSTOM_RECIPE_IDS.stream()
+            .filter(id -> !loadedIds.contains(id))
+            .sorted(Comparator.comparing(Identifier::toString))
+            .toList();
+
+        long loadedInNamespace = loadedIds.stream()
+            .filter(id -> MOD_ID.equals(id.getNamespace()))
+            .count();
+
+        if (missing.isEmpty()) {
+            LOGGER.info("Loaded all {} custom lifesteal recipes successfully.", EXPECTED_CUSTOM_RECIPE_IDS.size());
+        } else {
+            LOGGER.error("Missing {} custom recipe(s): {}", missing.size(), missing);
+            LOGGER.error("Check data pack load order, recipe JSON syntax, and recipe ID collisions/overrides.");
+        }
+
+        if (loadedInNamespace < EXPECTED_CUSTOM_RECIPE_IDS.size()) {
+            LOGGER.warn("Only {} recipes found under namespace '{}', expected at least {}.", loadedInNamespace, MOD_ID, EXPECTED_CUSTOM_RECIPE_IDS.size());
+        }
     }
 
     public static void openShop(ServerPlayerEntity player) {
