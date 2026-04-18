@@ -9,6 +9,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.AnvilScreenHandler;
 import net.minecraft.screen.EnchantmentScreenHandler;
 import net.minecraft.screen.GrindstoneScreenHandler;
+import net.minecraft.screen.SmithingScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -28,7 +29,7 @@ public abstract class ScreenHandlerMixin {
         ScreenHandler handler = (ScreenHandler) (Object) this;
 
         // Block repair/combine/disenchant for kit-locked items.
-        if (handler instanceof AnvilScreenHandler || handler instanceof GrindstoneScreenHandler) {
+        if (handler instanceof AnvilScreenHandler || handler instanceof GrindstoneScreenHandler || handler instanceof SmithingScreenHandler) {
             if (slotIndex >= 0 && slotIndex <= 2) {
                 ItemStack in0 = handler.getSlot(0).getStack();
                 ItemStack in1 = handler.getSlot(1).getStack();
@@ -36,7 +37,7 @@ public abstract class ScreenHandlerMixin {
                 ItemStack clicked = handler.getSlot(slotIndex).getStack();
                 if (LifeSteal.isUnmodifiable(in0) || LifeSteal.isUnmodifiable(in1) || LifeSteal.isUnmodifiable(out) || LifeSteal.isUnmodifiable(clicked)) {
                     ci.cancel();
-                    serverPlayer.sendMessage(Text.literal("§cKit item nelze upravovat v kovadlině ani brusce."), true);
+                    serverPlayer.sendMessage(Text.literal("§cKit item nelze upravovat v kovadlině, brusce ani smithingu."), true);
                     handler.syncState();
                     return;
                 }
