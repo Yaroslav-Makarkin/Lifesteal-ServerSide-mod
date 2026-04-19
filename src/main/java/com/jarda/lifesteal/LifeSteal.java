@@ -131,6 +131,9 @@ public class LifeSteal implements ModInitializer {
     private static final Map<UUID, TeleportTarget> RETURN_POS = new HashMap<>();
     private static final Map<UUID, Integer> PENDING_SPAWN_TELEPORTS = new HashMap<>();
     private static final int SPAWN_TELEPORT_RETRY_TICKS = 60;
+    private static final Map<UUID, Long> PENDING_SPAWN_WARMUPS = new HashMap<>();
+    private static final Map<UUID, Vec3d> PENDING_SPAWN_WARMUP_POSITIONS = new HashMap<>();
+    private static final long SPAWN_WARMUP_MS = 3000L;
 
     private static final Set<UUID> LOGGED_IN = new HashSet<>();
     private static final Set<UUID> LAYING_PLAYERS = new HashSet<>();
@@ -805,25 +808,18 @@ public class LifeSteal implements ModInitializer {
                         removeCombatBossBar(player.getUuid());
                     }
 
-                    TeleportTarget returnTarget = new TeleportTarget(
-                        (ServerWorld) player.getEntityWorld(),
-                        new Vec3d(player.getX(), player.getY(), player.getZ()),
-                        player.getVelocity(),
-                        player.getYaw(),
-                        player.getPitch(),
-                        TeleportTarget.NO_OP
-                    );
-                    RETURN_POS.put(player.getUuid(), returnTarget);
-
-                    context.getSource().sendFeedback(() -> Text.literal("§eTeleportuješ se na spawn. Pokud nepoužiješ /back, zpátky půjdeš pěšky."), false);
-                    if (teleportToConfiguredSpawn(player)) {
-                        context.getSource().sendFeedback(() -> Text.literal("§aByl jsi teleportován na spawn."), false);
-                        return 1;
-                    } else {
-                        RETURN_POS.remove(player.getUuid());
+                    if (!oracleState.spawnSet) {
                         context.getSource().sendError(Text.literal("§cSpawn nebyl administrátorem nastaven."));
                         return 0;
                     }
+
+                    UUID playerId = player.getUuid();
+                    PENDING_SPAWN_WARMUPS.put(playerId, now + SPAWN_WARMUP_MS);
+                    PENDING_SPAWN_WARMUP_POSITIONS.put(playerId, new Vec3d(player.getX(), player.getY(), player.getZ()));
+
+                    context.getSource().sendFeedback(() -> Text.literal("§eNehýbej se 3 sekundy pro teleport na spawn."), false);
+                    context.getSource().sendFeedback(() -> Text.literal("§ePo teleportu se vrátíš jen pomocí /back, jinak pěšky."), false);
+                    return 1;
                 }
                 return 0;
             }));
@@ -1755,6 +1751,8 @@ public class LifeSteal implements ModInitializer {
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             UUID uuid = handler.player.getUuid();
+            PENDING_SPAWN_WARMUPS.remove(uuid);
+            PENDING_SPAWN_WARMUP_POSITIONS.remove(uuid);
             if (COMBAT_TAGS.remove(uuid) != null) {
                 try {
                     UUID attackerUuid = COMBAT_LAST_ATTACKER.remove(uuid);
@@ -1979,6 +1977,7 @@ public class LifeSteal implements ModInitializer {
             boolean isSecond = gameTime % 20 == 0;
 
             processPendingSpawnTeleports(server);
+            processPendingSpawnWarmups(server);
 
             // Handle weekend voting logic
             if (isSecond) {
@@ -3464,6 +3463,56 @@ public class LifeSteal implements ModInitializer {
             } else {
                 entry.setValue(remainingTicks - 1);
             }
+        }
+    }
+
+    private static void processPendingSpawnWarmups(MinecraftServer server) {
+        if (PENDING_SPAWN_WARMUPS.isEmpty()) return;
+
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<UUID, Long>> iterator = PENDING_SPAWN_WARMUPS.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, Long> entry = iterator.next();
+            UUID playerId = entry.getKey();
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerId);
+            Vec3d startPos = PENDING_SPAWN_WARMUP_POSITIONS.get(playerId);
+
+            if (player == null || startPos == null) {
+                iterator.remove();
+                PENDING_SPAWN_WARMUP_POSITIONS.remove(playerId);
+                continue;
+            }
+
+            if (player.squaredDistanceTo(startPos) > 0.01) {
+                player.sendMessage(Text.literal("§cTeleport na spawn zrušen: pohnul ses."), true);
+                iterator.remove();
+                PENDING_SPAWN_WARMUP_POSITIONS.remove(playerId);
+                continue;
+            }
+
+            if (entry.getValue() > now) {
+                continue;
+            }
+
+            TeleportTarget returnTarget = new TeleportTarget(
+                (ServerWorld) player.getEntityWorld(),
+                new Vec3d(player.getX(), player.getY(), player.getZ()),
+                player.getVelocity(),
+                player.getYaw(),
+                player.getPitch(),
+                TeleportTarget.NO_OP
+            );
+            RETURN_POS.put(playerId, returnTarget);
+
+            if (teleportToConfiguredSpawn(player)) {
+                player.sendMessage(Text.literal("§aByl jsi teleportován na spawn."), false);
+            } else {
+                RETURN_POS.remove(playerId);
+                player.sendMessage(Text.literal("§cSpawn nebyl administrátorem nastaven."), false);
+            }
+
+            iterator.remove();
+            PENDING_SPAWN_WARMUP_POSITIONS.remove(playerId);
         }
     }
 
