@@ -804,13 +804,47 @@ public class LifeSteal implements ModInitializer {
                         COMBAT_LAST_ATTACKER.remove(player.getUuid());
                         removeCombatBossBar(player.getUuid());
                     }
+
+                    TeleportTarget returnTarget = new TeleportTarget(
+                        (ServerWorld) player.getEntityWorld(),
+                        new Vec3d(player.getX(), player.getY(), player.getZ()),
+                        player.getVelocity(),
+                        player.getYaw(),
+                        player.getPitch(),
+                        TeleportTarget.NO_OP
+                    );
+                    RETURN_POS.put(player.getUuid(), returnTarget);
+
+                    context.getSource().sendFeedback(() -> Text.literal("§eTeleportuješ se na spawn. Pokud nepoužiješ /back, zpátky půjdeš pěšky."), false);
                     if (teleportToConfiguredSpawn(player)) {
                         context.getSource().sendFeedback(() -> Text.literal("§aByl jsi teleportován na spawn."), false);
                         return 1;
                     } else {
+                        RETURN_POS.remove(player.getUuid());
                         context.getSource().sendError(Text.literal("§cSpawn nebyl administrátorem nastaven."));
                         return 0;
                     }
+                }
+                return 0;
+            }));
+
+            // back
+            dispatcher.register(CommandManager.literal("back").executes(context -> {
+                ServerPlayerEntity player = context.getSource().getPlayer();
+                if (player != null) {
+                    if (!LOGGED_IN.contains(player.getUuid())) {
+                        context.getSource().sendError(Text.literal("§cMusíš se nejprve přihlásit: /login <heslo>"));
+                        return 0;
+                    }
+                    TeleportTarget targetData = RETURN_POS.get(player.getUuid());
+                    if (targetData == null) {
+                        context.getSource().sendError(Text.literal("§cNemáš uloženou pozici pro návrat."));
+                        return 0;
+                    }
+                    player.teleportTo(targetData);
+                    RETURN_POS.remove(player.getUuid());
+                    context.getSource().sendFeedback(() -> Text.literal("§aByl jsi teleportován zpět na pozici před spawnem."), false);
+                    return 1;
                 }
                 return 0;
             }));
