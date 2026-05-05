@@ -14,6 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class FarmlandMixin {
     @Inject(method = "setToDirt", at = @At("HEAD"), cancellable = true)
     private static void lifesteal$noTrample(Entity entity, BlockState state, World world, BlockPos pos, CallbackInfo ci) {
+        if (entity == null || state == null || world == null || pos == null) {
+            return;
+        }
         ci.cancel();
     }
 }

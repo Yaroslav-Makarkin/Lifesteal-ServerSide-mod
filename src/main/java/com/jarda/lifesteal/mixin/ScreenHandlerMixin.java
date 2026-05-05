@@ -24,13 +24,26 @@ public abstract class ScreenHandlerMixin {
 
     @Inject(method = "onSlotClick", at = @At("HEAD"), cancellable = true)
     private void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
-        if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
+        if (player == null) {
+            return;
+        }
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
 
         ScreenHandler handler = (ScreenHandler) (Object) this;
+        if (handler == null) {
+            return;
+        }
 
         // Block repair/combine/disenchant for kit-locked items.
         if (handler instanceof AnvilScreenHandler || handler instanceof GrindstoneScreenHandler || handler instanceof SmithingScreenHandler) {
-            if (slotIndex >= 0 && slotIndex <= 2) {
+            // Ensure we have enough slots to access indices 0,1,2 and slotIndex
+            if (slotIndex >= 0 && slotIndex < handler.slots.size()
+                    && handler.getSlot(0) != null
+                    && handler.getSlot(1) != null
+                    && handler.getSlot(2) != null
+                    && handler.getSlot(slotIndex) != null) {
                 ItemStack in0 = handler.getSlot(0).getStack();
                 ItemStack in1 = handler.getSlot(1).getStack();
                 ItemStack out = handler.getSlot(2).getStack();
@@ -48,7 +61,9 @@ public abstract class ScreenHandlerMixin {
         String menuType = LifeSteal.OPEN_MENUS.get(serverPlayer.getUuid());
         if (menuType != null) {
             ci.cancel();
-            handler.setCursorStack(ItemStack.EMPTY);
+            if (handler != null) {
+                handler.setCursorStack(ItemStack.EMPTY);
+            }
 
             final int clickedSlot = slotIndex;
             serverPlayer.getCommandSource().getServer().execute(() -> {
@@ -63,7 +78,9 @@ public abstract class ScreenHandlerMixin {
         Inventory shopInv = LifeSteal.OPEN_SHOPS.get(serverPlayer.getUuid());
         if (shopInv != null) {
             ci.cancel();
-            handler.setCursorStack(ItemStack.EMPTY);
+            if (handler != null) {
+                handler.setCursorStack(ItemStack.EMPTY);
+            }
 
             if (slotIndex < 0) {
                 return;
@@ -81,27 +98,48 @@ public abstract class ScreenHandlerMixin {
 
     @Inject(method = "onButtonClick", at = @At("HEAD"), cancellable = true)
     private void onButtonClick(PlayerEntity player, int id, CallbackInfoReturnable<Boolean> cir) {
-        if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
+        if (player == null) {
+            return;
+        }
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
 
         ScreenHandler handler = (ScreenHandler) (Object) this;
-        if (handler instanceof EnchantmentScreenHandler && !handler.getSlot(0).getStack().isEmpty()) {
-            ItemStack toEnchant = handler.getSlot(0).getStack();
-            if (LifeSteal.isUnmodifiable(toEnchant)) {
-                serverPlayer.sendMessage(Text.literal("§cKit item nelze enchantit."), true);
-                handler.syncState();
-                cir.setReturnValue(false);
+        if (handler == null) {
+            return;
+        }
+        if (handler instanceof EnchantmentScreenHandler) {
+            // Ensure slot 0 exists
+            if (handler.getSlot(0) != null && !handler.getSlot(0).getStack().isEmpty()) {
+                ItemStack toEnchant = handler.getSlot(0).getStack();
+                if (LifeSteal.isUnmodifiable(toEnchant)) {
+                    serverPlayer.sendMessage(Text.literal("§cKit item nelze enchantit."), true);
+                    if (handler != null) {
+                        handler.syncState();
+                    }
+                    cir.setReturnValue(false);
+                }
             }
         }
     }
 
     @Inject(method = "onClosed", at = @At("HEAD"))
     private void onClosed(PlayerEntity player, CallbackInfo ci) {
-        if (player instanceof ServerPlayerEntity serverPlayer) {
-            ScreenHandler handler = (ScreenHandler) (Object) this;
-            if (handler instanceof GenericContainerScreenHandler) {
-                LifeSteal.OPEN_SHOPS.remove(serverPlayer.getUuid());
-                LifeSteal.OPEN_MENUS.remove(serverPlayer.getUuid());
-            }
+        if (player == null) {
+            return;
+        }
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
+
+        ScreenHandler handler = (ScreenHandler) (Object) this;
+        if (handler == null) {
+            return;
+        }
+        if (handler instanceof GenericContainerScreenHandler) {
+            LifeSteal.OPEN_SHOPS.remove(serverPlayer.getUuid());
+            LifeSteal.OPEN_MENUS.remove(serverPlayer.getUuid());
         }
     }
 }

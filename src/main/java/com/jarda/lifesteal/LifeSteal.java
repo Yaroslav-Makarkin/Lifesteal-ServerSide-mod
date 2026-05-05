@@ -330,6 +330,25 @@ public class LifeSteal implements ModInitializer {
 
     private static OracleState oracleState = new OracleState();
 
+    /**
+     * Checks if a player is logged in and sends an appropriate message if not.
+     * @param player The player to check
+     * @return true if the player is logged in, false otherwise
+     */
+    private static boolean checkLogin(PlayerEntity player) {
+        if (player == null) {
+            return false;
+        }
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+            return false;
+        }
+        if (LOGGED_IN.contains(serverPlayer.getUuid())) {
+            return true;
+        }
+        serverPlayer.sendMessage(Text.literal("§cMusíš se nejprve přihlásit: /login <heslo>"), true);
+        return false;
+    }
+
     @Override
     public void onInitialize() {
         LOGGER.info("LifeSteal SMP mod initializing...");
@@ -362,6 +381,9 @@ public class LifeSteal implements ModInitializer {
         });
 
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            if (entity == null || source == null) {
+                return true;
+            }
             if (entity instanceof ServerPlayerEntity player && !LOGGED_IN.contains(player.getUuid())) {
                 return false;
             }
@@ -439,8 +461,7 @@ public class LifeSteal implements ModInitializer {
         // Use item: blokace pro nepřihlášené + spotřeba srdce
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (world.isClient()) return ActionResult.PASS;
-            if (player instanceof ServerPlayerEntity sp && !LOGGED_IN.contains(sp.getUuid())) {
-                sp.sendMessage(Text.literal("§cMusíš se nejprve přihlásit: /login <heslo>"), true);
+            if (!checkLogin(player)) {
                 return ActionResult.FAIL;
             }
             ItemStack stack = player.getStackInHand(hand);
@@ -546,8 +567,7 @@ public class LifeSteal implements ModInitializer {
         // Blokace interakcí pro nepřihlášené + Ochrana spawnu
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             if (player instanceof ServerPlayerEntity sp) {
-                if (!LOGGED_IN.contains(sp.getUuid())) {
-                    sp.sendMessage(Text.literal("§cMusíš se nejprve přihlásit: /login <heslo>"), true);
+                if (!checkLogin(sp)) {
                     return ActionResult.FAIL;
                 }
                 BlockState state = world.getBlockState(hitResult.getBlockPos());
@@ -588,7 +608,7 @@ public class LifeSteal implements ModInitializer {
         // Ochrana spawnu proti ničení a Oracle eventy pro těžbu
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             if (player instanceof ServerPlayerEntity sp) {
-                if (!LOGGED_IN.contains(sp.getUuid())) {
+                if (!checkLogin(sp)) {
                     return ActionResult.FAIL;
                 }
                 if (isInSpawnProtection(sp, pos)) {
@@ -631,8 +651,7 @@ public class LifeSteal implements ModInitializer {
         });
 
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            if (player instanceof ServerPlayerEntity sp && !LOGGED_IN.contains(sp.getUuid())) {
-                sp.sendMessage(Text.literal("§cMusíš se nejprve přihlásit: /login <heslo>"), true);
+            if (!checkLogin(player)) {
                 return ActionResult.FAIL;
             }
 
@@ -893,13 +912,25 @@ public class LifeSteal implements ModInitializer {
                     CRAWLING_PLAYERS.remove(player.getUuid());
                     if (LAYING_PLAYERS.contains(player.getUuid())) {
                         LAYING_PLAYERS.remove(player.getUuid());
-                        player.setPose(EntityPose.STANDING);
-                        player.clearSleepingPosition();
+                        try {
+                            // wake up properly on server
+                            player.wakeUp(true, false);
+                        } catch (Throwable t) {
+                            // fallback to clearing sleeping state
+                            player.setPose(EntityPose.STANDING);
+                            player.clearSleepingPosition();
+                        }
                         context.getSource().sendFeedback(() -> Text.literal("§eJiž neležíš."), false);
                     } else {
                         LAYING_PLAYERS.add(player.getUuid());
-                        player.setPose(EntityPose.SLEEPING);
-                        player.setSleepingPosition(player.getBlockPos());
+                        try {
+                            // attempt to use server sleep logic so client shows lying pose
+                            player.trySleep(player.getBlockPos());
+                        } catch (Throwable t) {
+                            // fallback to forcing pose if API not available
+                            player.setPose(EntityPose.SLEEPING);
+                            player.setSleepingPosition(player.getBlockPos());
+                        }
                         context.getSource().sendFeedback(() -> Text.literal("§aNyní ležíš. Pohybem nebo Shiftem se zvedneš."), false);
                     }
                     return 1;
@@ -1978,6 +2009,19 @@ public class LifeSteal implements ModInitializer {
 
             processPendingSpawnTeleports(server);
             processPendingSpawnWarmups(server);
+
+        // Enforce frozen players - prevent movement
+        for (UUID frozenId : FROZEN_PLAYERS) {
+            ServerPlayerEntity frozenPlayer = server.getPlayerManager().getPlayer(frozenId);
+            if (frozenPlayer != null && frozenPlayer.isAlive()) {
+                // Teleport player back to their current position to freeze them
+                frozenPlayer.requestTeleport(
+                    frozenPlayer.getX(),
+                    frozenPlayer.getY(),
+                    frozenPlayer.getZ()
+                );
+            }
+        }
 
             // Handle weekend voting logic
             if (isSecond) {

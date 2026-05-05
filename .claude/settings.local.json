@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(grep -n \"^\\\\s*\\\\\\);\\\\s*$\" \"C:\\\\Users\\\\jaros\\\\Desktop\\\\LifeSteal\\\\src\\\\main\\\\java\\\\com\\\\jarda\\\\lifesteal\\\\LifeSteal.java\")",
+      "Bash(grep -E \"^\\\\s*\\\\\\);\\\\s*$\" \"C:\\\\Users\\\\jaros\\\\Desktop\\\\LifeSteal\\\\src\\\\main\\\\java\\\\com\\\\jarda\\\\lifesteal\\\\LifeSteal.java\")",
+      "Bash(./gradlew build *)",
+      "Bash(Select-String -Pattern \"error|Error|ERROR|BUILD\" -Context 2)"
+    ]
+  }
+}
