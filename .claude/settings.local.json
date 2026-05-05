@@ -5,7 +5,9 @@
       "Bash(grep -n \"^\\\\s*\\\\\\);\\\\s*$\" \"C:\\\\Users\\\\jaros\\\\Desktop\\\\LifeSteal\\\\src\\\\main\\\\java\\\\com\\\\jarda\\\\lifesteal\\\\LifeSteal.java\")",
       "Bash(grep -E \"^\\\\s*\\\\\\);\\\\s*$\" \"C:\\\\Users\\\\jaros\\\\Desktop\\\\LifeSteal\\\\src\\\\main\\\\java\\\\com\\\\jarda\\\\lifesteal\\\\LifeSteal.java\")",
       "Bash(./gradlew build *)",
-      "Bash(Select-String -Pattern \"error|Error|ERROR|BUILD\" -Context 2)"
+      "Bash(Select-String -Pattern \"error|Error|ERROR|BUILD\" -Context 2)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }
