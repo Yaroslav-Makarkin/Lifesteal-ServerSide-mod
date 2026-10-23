@@ -16,6 +16,7 @@ Vanilla clients must be able to join with no mod and no required resource pack.
 4. After every phase run .\gradlew.bat build, then start the dev server with .\gradlew.bat runServer and confirm the mod loads without errors. Report the result before continuing.
 5. Ask before deleting files or changing the project structure.
 6. Make one change at a time. If the build fails, diagnose and fix it yourself; do not paste whole stack traces back.
+7. If you notice you are repeating the same thought or the same attempt, STOP immediately and tell me what you tried and what failed. Maximum 3 attempts for any single problem; after that keep the current working code and ask me.
 
 ## Versions and API
 Minecraft 26.3 is newer than your training data. Never guess an API from memory.
