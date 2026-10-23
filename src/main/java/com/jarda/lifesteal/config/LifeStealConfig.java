@@ -22,6 +22,7 @@ public class LifeStealConfig {
     public int heartsGainedPerKill = 1;
     public int heartsLostPerDeath = 1;
     public int killAttributionWindowSeconds = 10;
+    public boolean debugLogging = false;
 
     private transient Path configPath;
 
@@ -95,6 +96,8 @@ public class LifeStealConfig {
             hasErrors = true;
         }
 
+        // boolean pole nemá validaci
+
         if (hasErrors) {
             save();
         }
@@ -117,4 +120,5 @@ public class LifeStealConfig {
     public int getHeartsGainedPerKill() { return heartsGainedPerKill; }
     public int getHeartsLostPerDeath() { return heartsLostPerDeath; }
     public int getKillAttributionWindowSeconds() { return killAttributionWindowSeconds; }
+    public boolean isDebugLogging() { return debugLogging; }
 }
