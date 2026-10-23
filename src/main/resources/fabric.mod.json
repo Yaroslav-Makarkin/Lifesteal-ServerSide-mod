@@ -7,23 +7,12 @@
   "authors": [],
   "contact": {},
   "license": "All-Rights-Reserved",
-  "icon": "assets/lifesteal/icon.png",
   "environment": "server",
   "entrypoints": {
-    "fabric-datagen": [
-      "com.jarda.lifesteal.client.LifeStealDataGenerator"
-    ],
     "main": [
       "com.jarda.lifesteal.LifeSteal"
     ]
   },
-  "mixins": [
-    "lifesteal.mixins.json",
-    {
-      "config": "lifesteal.client.mixins.json",
-      "environment": "client"
-    }
-  ],
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric-api": "*",

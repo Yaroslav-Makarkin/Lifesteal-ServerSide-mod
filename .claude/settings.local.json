@@ -7,7 +7,16 @@
       "Bash(./gradlew build *)",
       "Bash(Select-String -Pattern \"error|Error|ERROR|BUILD\" -Context 2)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(gradlew.bat build *)",
+      "Bash(where java *)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\jaros\\\\AppData\\\\Local\\\\Programs\\\\Eclipse Adoptium\\\\jdk-21.0.9.10-hotspot\"; cd \"C:\\\\Users\\\\jaros\\\\Desktop\\\\LifeSteal\"; .\\\\gradlew.bat build)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Common Files\\\\Oracle\\\\Java\\\\javapath\"; cd \"C:\\\\Users\\\\jaros\\\\Desktop\\\\LifeSteal\"; .\\\\gradlew.bat build --no-daemon 2>&1 | Select-Object -Last 50)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Common Files\\\\Oracle\\\\Java\\\\javapath_target_85121281\"; cd \"C:\\\\Users\\\\jaros\\\\Desktop\\\\LifeSteal\"; .\\\\gradlew.bat build --no-daemon 2>&1 | Select-Object -Last 50)",
+      "PowerShell(cd \"C:\\\\Users\\\\jaros\\\\Desktop\\\\LifeSteal\"; $env:JAVA_HOME = \"C:\\\\Program Files\\\\Common Files\\\\Oracle\\\\Java\\\\javapath_target_85121281\"; $env:PATH = \"$env:JAVA_HOME;$env:PATH\"; .\\\\gradlew.bat build --no-daemon 2>&1 | Select-Object -Last 30)",
+      "PowerShell(java *)",
+      "PowerShell(cd \"C:\\\\Users\\\\jaros\\\\Desktop\\\\LifeSteal\"; $env:JAVA_HOME = \"\"; .\\\\gradlew.bat build --no-daemon 2>&1 | Select-Object -Last 20)",
+      "PowerShell([Environment]::SetEnvironmentVariable\\(\"JAVA_HOME\", \"\", \"User\"\\); cd \"C:\\\\Users\\\\jaros\\\\Desktop\\\\LifeSteal\"; .\\\\gradlew.bat build --no-daemon)"
     ]
   }
 }
