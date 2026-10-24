@@ -29,7 +29,6 @@ public class LifeStealCommands {
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher, net.minecraft.commands.CommandBuildContext context, Object selection) {
-        // Third parameter is not used but required by the callback signature
         registerCommands(dispatcher, context);
     }
 

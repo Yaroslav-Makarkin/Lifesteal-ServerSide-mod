@@ -10,10 +10,13 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.regex.Pattern;
 
 public class LifeStealConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger("lifesteal-config");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Pattern ITEM_ID_PATTERN = Pattern.compile("^[a-z0-9_]+:[a-z0-9_/.-]+$");
 
     // Výchozí hodnoty
     public int startingHearts = 10;
@@ -24,13 +27,15 @@ public class LifeStealConfig {
     public int killAttributionWindowSeconds = 10;
     public boolean debugLogging = false;
 
+    // Phase 5
+    public boolean loseHeartOnNonPlayerDeath = false;
+
     private transient Path configPath;
 
     private LifeStealConfig() {}
 
     public static LifeStealConfig load(MinecraftServer server) {
         LifeStealConfig config = new LifeStealConfig();
-        // V 26.x používáme server.getServerDirectory() pro adresář serveru
         try {
             config.configPath = server.getServerDirectory().resolve("config").resolve("lifesteal.json");
         } catch (Exception e) {
@@ -52,7 +57,6 @@ public class LifeStealConfig {
             LOGGER.warn("Nepodařilo se načíst konfiguraci, používám výchozí hodnoty: {}", e.getMessage());
         }
 
-        // Vytvořit výchozí konfiguraci
         config.save();
         return config;
     }
@@ -96,8 +100,6 @@ public class LifeStealConfig {
             hasErrors = true;
         }
 
-        // boolean pole nemá validaci
-
         if (hasErrors) {
             save();
         }
@@ -113,7 +115,7 @@ public class LifeStealConfig {
         }
     }
 
-    // Gettery pro přístup k hodnotám
+    // Gettery
     public int getStartingHearts() { return startingHearts; }
     public int getMinHearts() { return minHearts; }
     public int getMaxHearts() { return maxHearts; }
@@ -121,4 +123,5 @@ public class LifeStealConfig {
     public int getHeartsLostPerDeath() { return heartsLostPerDeath; }
     public int getKillAttributionWindowSeconds() { return killAttributionWindowSeconds; }
     public boolean isDebugLogging() { return debugLogging; }
+    public boolean isLoseHeartOnNonPlayerDeath() { return loseHeartOnNonPlayerDeath; }
 }
