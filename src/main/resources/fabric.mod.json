@@ -13,6 +13,9 @@
       "com.jarda.lifesteal.LifeSteal"
     ]
   },
+  "mixins": [
+    "lifesteal.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric-api": "*",
